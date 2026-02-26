@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [development, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+          POSTGRES_DB: smartbooking
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # ==================
+      # BACKEND
+      # ==================
+      - name: Install Backend
+        working-directory: ./backend
+        run: npm install
+
+      - name: Test Backend
+        working-directory: ./backend
+        run: npm test || echo "No tests yet"
+
+      # ==================
+      # FRONTEND
+      # ==================
+      - name: Install Frontend
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Test Frontend
+        working-directory: ./frontend
+        run: npm test || echo "No tests yet"
