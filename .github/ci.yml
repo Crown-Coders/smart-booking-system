@@ -2,13 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [develop, main]
+    branches: [development, main]
   pull_request:
-    branches: [develop, main]
+    branches: [development, main]
 
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:15
@@ -26,23 +27,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
       - name: Install Backend Dependencies
-        working-directory: ./server
+        working-directory: ./server-backend
         run: npm install
 
       - name: Install Frontend Dependencies
-        working-directory: ./client
+        working-directory: ./client-frontend
         run: npm install
 
       - name: Run Backend Tests
-        working-directory: ./server
+        working-directory: ./server-backend
         run: npm test || echo "No tests yet"
 
       - name: Run Frontend Tests
-        working-directory: ./client
+        working-directory: ./client-frontend
         run: npm test || echo "No tests yet"
