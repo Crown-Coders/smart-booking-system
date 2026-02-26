@@ -19,11 +19,6 @@ jobs:
           POSTGRES_DB: smartbooking
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -33,18 +28,24 @@ jobs:
         with:
           node-version: 20
 
+      # Backend
       - name: Install Backend Dependencies
-        working-directory: ./server-backend
+        working-directory: ./backend
         run: npm install
 
-      - name: Install Frontend Dependencies
-        working-directory: ./client-frontend
-        run: npm install
-
-      - name: Run Backend Tests
-        working-directory: ./server-backend
+      - name: Test Backend
+        working-directory: ./backend
         run: npm test || echo "No tests yet"
 
-      - name: Run Frontend Tests
-        working-directory: ./client-frontend
+      # Frontend
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Test Frontend
+        working-directory: ./frontend
         run: npm test || echo "No tests yet"
