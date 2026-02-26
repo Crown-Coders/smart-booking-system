@@ -28,8 +28,10 @@ jobs:
         with:
           node-version: 20
 
-      # Backend
-      - name: Install Backend Dependencies
+      # ==================
+      # BACKEND
+      # ==================
+      - name: Install Backend
         working-directory: ./backend
         run: npm install
 
@@ -37,8 +39,10 @@ jobs:
         working-directory: ./backend
         run: npm test || echo "No tests yet"
 
-      # Frontend
-      - name: Install Frontend Dependencies
+      # ==================
+      # FRONTEND
+      # ==================
+      - name: Install Frontend
         working-directory: ./frontend
         run: npm install
 
