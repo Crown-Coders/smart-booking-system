@@ -40,3 +40,45 @@
 .read-the-docs {
   color: #888;
 }
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: none;
+  align-items: center;
+  padding: 1rem;
+  background: #9a79ba;
+  color: white;
+  position: fixed;
+  width: 100%;
+  z-index: 1000;
+}
+
+.hamburger {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-right: 1rem;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+  margin-left: 240px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .topbar {
+    display: flex;
+  }
+
+  .content {
+    margin-left: 0;
+    padding-top: 4rem;
+  }
+}

@@ -1,35 +1,41 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState } from "react";
 import './App.css'
+import Sidebar from './components/layout/Sidebar'
+
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+  //  This will come from auth later
+  const user = {
+    role: "admin", // try: "client" or "admin" or "therapist"
+  };
+
+   return (
+    <div className="app-layout">
+      {/* Top bar (mobile) */}
+      <header className="topbar">
+        <button
+          className="hamburger"
+          onClick={() => setSidebarOpen((open) => !open)}
+        >
+          ☰
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+        <span className="app-title">Smart Booking</span>
+      </header>
+
+      <Sidebar
+        userRole={user.role}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      <main className="content">
+        <h1>Dashboard</h1>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
+
