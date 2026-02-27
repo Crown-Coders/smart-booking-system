@@ -7,6 +7,8 @@ import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
 import Home from "./components/layout/Home";
+import TherapistDashboard from './Therapist/TherapistDashboard';
+import Profile from './Therapist/Profile';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -38,6 +40,8 @@ function AppLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+        <Route path="/" element={<TherapistDashboard />} />
+        <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>
     </>
