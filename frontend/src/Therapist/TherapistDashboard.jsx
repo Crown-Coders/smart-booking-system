@@ -1,25 +1,29 @@
-import React from "react";
-import { useNavigate } from "react-router-dom"; // ✅ ADD THIS
+﻿import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
 
 const TherapistDashboard = () => {
-  const navigate = useNavigate(); // ✅ ADD THIS
+  const upcomingRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Dummy data (later this will come from backend)
+  // Availability state
+  const [isAvailable, setIsAvailable] = useState(true);
+
+  // Dummy data (later from backend)
   const upcomingSessions = [
     { id: 1, client: "John Doe", date: "2025-03-10", time: "10:00 AM" },
     { id: 2, client: "Jane Smith", date: "2025-03-11", time: "2:00 PM" },
   ];
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={pageStyle}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={headerStyle}>
         <div>
           <h1>Therapist Dashboard</h1>
-          <p>Welcome back! Here’s an overview of your activity.</p>
+          <p>Welcome back! Here's an overview of your activity.</p>
         </div>
 
-        {/* ✅ PROFILE BUTTON — PUT IT HERE */}
         <button
           onClick={() => navigate("/profile")}
           style={profileButtonStyle}
@@ -28,26 +32,56 @@ const TherapistDashboard = () => {
         </button>
       </div>
 
-      {/* Stats Section */}
-      <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
-        <div style={cardStyle}>
-          <h3>Total Sessions</h3>
-          <p>24</p>
-        </div>
+      {/* Cards */}
+      <div style={cardsWrapper}>
+  {/* Total Sessions */}
+  <div
+    style={clickableCard}
+    onClick={() => navigate("/total-sessions")}
+  >
+    <h3>Total Sessions</h3>
+    <p>24</p>
+  </div>
 
-        <div style={cardStyle}>
-          <h3>Upcoming Sessions</h3>
-          <p>{upcomingSessions.length}</p>
-        </div>
+  {/* Upcoming Sessions */}
+  <div
+    style={clickableCard}
+   onClick={() => {
+  upcomingRef.current?.scrollIntoView({ behavior: "smooth" });
+}}
+  >
+    <h3>Upcoming Sessions</h3>
+    <p>{upcomingSessions.length}</p>
+  </div>
 
-        <div style={cardStyle}>
-          <h3>Status</h3>
-          <p>Available</p>
-        </div>
-      </div>
+  {/* âœ… BOOKING HISTORY CARD â€” ADD THIS */}
+  <div
+    style={clickableCard}
+    onClick={() => navigate("/booking-history")}
+  >
+    <h3>Booking History</h3>
+    <p>View all sessions</p>
+  </div>
 
-      {/* Upcoming Sessions */}
-      <h2 style={{ marginTop: "30px" }}>Upcoming Sessions</h2>
+  {/* Availability */}
+  <div style={cardStyle}>
+    <h3>Status</h3>
+    <p style={{ fontWeight: "bold", color: isAvailable ? "green" : "red" }}>
+      {isAvailable ? "Available" : "Not Available"}
+    </p>
+
+    <button
+      onClick={() => setIsAvailable(!isAvailable)}
+      style={statusButton}
+    >
+      Toggle Status
+    </button>
+  </div>
+</div>
+      {/* Upcoming Sessions List */}
+     <h2 ref={upcomingRef} style={{ marginTop: "30px" }}>
+  Upcoming Sessions
+</h2>
 
       {upcomingSessions.map((session) => (
         <div key={session.id} style={sessionStyle}>
@@ -60,12 +94,41 @@ const TherapistDashboard = () => {
   );
 };
 
-// Simple styles
+/* ===== Styles ===== */
+
+const pageStyle = {
+  padding: "20px",
+  maxWidth: "1200px",
+  margin: "0 auto",
+};
+
+const headerStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: "15px",
+};
+
+const cardsWrapper = {
+  display: "flex",
+  gap: "20px",
+  marginTop: "30px",
+  flexWrap: "wrap",
+};
+
 const cardStyle = {
   border: "1px solid #ddd",
   padding: "15px",
   borderRadius: "8px",
-  width: "200px",
+  minWidth: "220px",
+  flex: "1",
+};
+
+const clickableCard = {
+  ...cardStyle,
+  cursor: "pointer",
+  backgroundColor: "#f9fafb",
 };
 
 const sessionStyle = {
@@ -75,7 +138,6 @@ const sessionStyle = {
   borderRadius: "6px",
 };
 
-// ✅ PROFILE BUTTON STYLE
 const profileButtonStyle = {
   padding: "10px 16px",
   borderRadius: "6px",
@@ -83,7 +145,16 @@ const profileButtonStyle = {
   backgroundColor: "#4F46E5",
   color: "#fff",
   cursor: "pointer",
-  fontSize: "14px",
+};
+
+const statusButton = {
+  marginTop: "10px",
+  padding: "6px 10px",
+  borderRadius: "5px",
+  border: "none",
+  cursor: "pointer",
+  backgroundColor: "#111827",
+  color: "white",
 };
 
 export default TherapistDashboard;
