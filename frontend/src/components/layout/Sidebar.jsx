@@ -1,11 +1,20 @@
+// src/components/layout/Sidebar.jsx
 import { useState, useEffect } from "react";
 
-/* ===== BASE STYLES ===== */
+/* ===== COLOR PALETTE ===== */
+const COLORS = {
+  background: "#002324",      // Dark green sidebar
+  text: "#E5DDDE",            // Light cream text
+  hover: "#EBFACF",           // Soft green hover background
+  accent: "#A1AD95",          // Accent green for borders/highlights
+  disabled: "#A1AD95",        // Slightly muted accent for disabled
+};
 
+/* ===== BASE STYLES ===== */
 const sidebarBase = {
   width: "240px",
   height: "100vh",
-  backgroundColor: "#E6D7FA",
+  backgroundColor: COLORS.background,
   display: "flex",
   flexDirection: "column",
   padding: "1rem",
@@ -18,19 +27,29 @@ const sidebarBase = {
 
 const headerStyle = {
   marginBottom: "2rem",
-  color: "#4B2C73",
-  fontSize: "1.3rem",
-  fontWeight: "600",
+  color: COLORS.hover,          // Reserved for potential future use
+  fontSize: "1.5rem",
+  fontWeight: "700",
   display: "flex",
-  justifyContent: "space-between",
+  justifyContent: "flex-end",   // Align close button to the right
   alignItems: "center",
+  minHeight: "40px",            // Ensure consistent height even when empty
 };
 
 const closeBtnStyle = {
   background: "none",
   border: "none",
-  fontSize: "1.2rem",
+  fontSize: "1.5rem",
   cursor: "pointer",
+  color: COLORS.text,
+  padding: "0.25rem 0.5rem",
+  borderRadius: "4px",
+  transition: "background-color 0.2s",
+};
+
+const closeBtnHover = {
+  backgroundColor: COLORS.hover,
+  color: COLORS.background,
 };
 
 const navStyle = {
@@ -43,43 +62,51 @@ const navStyle = {
 const navItemStyle = {
   padding: "0.75rem 1rem",
   marginBottom: "0.5rem",
-  borderRadius: "6px",
+  borderRadius: "8px",
   cursor: "pointer",
-  color: "#6B5E7A",
+  color: COLORS.text,
+  fontWeight: 500,
+  transition: "all 0.3s ease",
 };
 
 const hoverStyle = {
-  backgroundColor: "#9A79BA",
-  color: "white",
+  backgroundColor: COLORS.hover,
+  color: COLORS.background,
+  fontWeight: 600,
 };
 
 const disabledStyle = {
   opacity: 0.5,
   cursor: "not-allowed",
+  color: COLORS.disabled,
 };
 
-/* ===== ROLE → MENU MAP ===== */
-
+/*  ROLE → MENU MAP */
 const MENU_BY_ROLE = {
   therapist: [
     { name: "Dashboard" },
     { name: "Appointments" },
     { name: "Calendar" },
     { name: "Clients" },
+    { name: "Profile" },
     { name: "AI Chatbot", disabled: true },
   ],
+
   client: [
+    { name: "Dashboard" },
     { name: "My Appointments" },
     { name: "Calendar" },
     { name: "Messages" },
-    { name: "Profile" },
+    { name: "AI Chatbot", disabled: true },
   ],
+
   admin: [
     { name: "Dashboard" },
     { name: "Users" },
     { name: "Therapists" },
     { name: "Reports" },
     { name: "System Settings" },
+    { name: "AI Chatbot", disabled: true },
   ],
 };
 
@@ -87,12 +114,9 @@ function Sidebar({ userRole, isOpen, onClose }) {
   const [hovered, setHovered] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  /* ===== HANDLE RESPONSIVENESS ===== */
+  // Handle mobile responsiveness
   useEffect(() => {
-    const checkScreen = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
+    const checkScreen = () => setIsMobile(window.innerWidth <= 768);
     checkScreen();
     window.addEventListener("resize", checkScreen);
     return () => window.removeEventListener("resize", checkScreen);
@@ -102,23 +126,32 @@ function Sidebar({ userRole, isOpen, onClose }) {
 
   const sidebarStyle = {
     ...sidebarBase,
-    transform:
-      isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
+    transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
   };
 
   return (
     <aside style={sidebarStyle}>
+      {/* Sidebar header – now only contains the close button on mobile */}
       <div style={headerStyle}>
-        <span>Mental</span>
-
-        {/* Close button only on mobile */}
         {isMobile && (
-          <button style={closeBtnStyle} onClick={onClose}>
+          <button
+            style={closeBtnStyle}
+            onClick={onClose}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = COLORS.hover;
+              e.currentTarget.style.color = COLORS.background;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = COLORS.text;
+            }}
+          >
             ✕
           </button>
         )}
       </div>
 
+      {/* Navigation items */}
       <ul style={navStyle}>
         {menuItems.map((item, index) => (
           <li
@@ -132,7 +165,8 @@ function Sidebar({ userRole, isOpen, onClose }) {
             onMouseLeave={() => setHovered(null)}
             onClick={() => {
               if (!item.disabled) {
-                console.log(item.name);
+                console.log(`Navigating to ${item.name}`);
+                // Add actual navigation logic here (e.g., useNavigate)
                 if (isMobile) onClose();
               }
             }}
