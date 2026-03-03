@@ -1,69 +1,161 @@
-/* src/App.css */
+App.css
 
-.app-layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: #002324; /* Dark green background (visible only behind sidebar) */
-  color: #E5DDDE;
-}
-
-.content {
-  flex: 1;
-  padding: 2rem;
-  padding-top: calc(2rem + 60px); /* 60px is navbar height */
-  margin-left: 240px;           /* Space for fixed sidebar */
-  background-color: #FFFFFF;    /* White background for all pages */
-  min-height: 100vh;
+/* ===============================
+   GLOBAL RESET & BASE
+================================ */
+* {
   box-sizing: border-box;
-
-  /* Add top padding to clear fixed navbar (60px height) */
-  padding-top: calc(2rem + 60px);
 }
 
-/* Navbar overrides (already styled in component) */
+body {
+  margin: 0;
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
 
-/* Login card – make it stand out against white background */
-.login-container {
-  max-width: 400px;
-  margin: 0 auto;
+/* Remove Vite demo constraints */
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+/* ===============================
+   BRAND HELPERS
+================================ */
+.brand-text {
+  color: var(--color-brand-primary);
+}
+
+.brand-bg {
+  background-color: var(--color-brand-bg);
+}
+
+/* ===============================
+   LAYOUT VARIABLES
+================================ */
+:root {
+  --navbar-height: 70px;
+  --sidebar-width: 240px;
+}
+
+/* ===============================
+   APP LAYOUT
+================================ */
+.app-layout {
+  min-height: 100vh;
+  background-color: var(--color-brand-bg);
+}
+
+/* ===============================
+   MAIN CONTENT AREA
+================================ */
+.content {
+  margin-top: var(--navbar-height);
+  margin-left: var(--sidebar-width);
   padding: 2rem;
-  background-color: #E5DDDE;
-  color: #002324;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  min-height: calc(100vh - var(--navbar-height));
+  transition: margin-left 0.3s ease;
 }
 
-.login-container input {
+/* Used for pages like Register / Login */
+.route-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0;
+  /* override content left margin so auth pages are full-width */
   width: 100%;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
-  border: 1px solid #A1AD95;
-  background-color: #EBFACF;
-  color: #002324;
+  padding: 2rem;
+  min-height: calc(100vh - var(--navbar-height));
+  background-color: var(--route-page-bg, #fff);
 }
 
-.login-container button {
+/* ===============================
+   TOPBAR (MOBILE ONLY)
+================================ */
+.topbar {
+  display: none;
+  align-items: center;
+  padding: 1rem;
+  background: #9a79ba;
+  color: white;
+  position: fixed;
+  top: 0;
   width: 100%;
-  padding: 0.8rem;
+  height: var(--navbar-height);
+  z-index: 1000;
+}
+
+.hamburger {
+  font-size: 1.5rem;
+  background: none;
   border: none;
-  border-radius: 8px;
-  background-color: #A1AD95;
-  color: #002324;
-  font-weight: bold;
+  color: white;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  margin-right: 1rem;
 }
 
-.login-container button:hover {
-  background-color: #EBFACF;
+/* ===============================
+   LOGO (optional, safe to keep)
+================================ */
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
 }
 
-/* Responsive: remove left margin and adjust padding */
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+/* ===============================
+   CARDS / MISC
+================================ */
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* ===============================
+   ANIMATIONS (optional)
+================================ */
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+/* ===============================
+   RESPONSIVE (MOBILE)
+================================ */
 @media (max-width: 768px) {
+  .topbar {
+    display: flex;
+  }
+
   .content {
     margin-left: 0;
-    padding: 1rem;
-    padding-top: calc(1rem + 60px); /* keep top clearance */
+    padding: 1.5rem 1rem;
   }
 }

@@ -5,34 +5,49 @@ import './App.css';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
+import Register from "./components/layout/Register";
 import Home from "./components/layout/Home";
-
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Placeholder user role, later comes from authentication
-  const user = { role: "therapist" }; // Change to "therapist" or "client" to test different menus
+  
+  // Mock user state; replace with real authentication later
+  const [user, setUser] = useState({ role: "therapist" }); // or null for not logged in
 
   return (
     <Router>
-      <div className="app-layout">
+      <div
+        className="app-layout"
+        style={{ "--sidebar-width": user?.role ? "240px" : "0px" }}
+      >
+        {/* Navbar */}
         <Navbar
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />
 
-        <Sidebar
-          userRole={user.role}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+        {/* Sidebar - only render if user is logged in */}
+        {user?.role && (
+          <Sidebar
+            userRole={user.role}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
 
+        {/* Main content */}
         <main className={`content ${sidebarOpen ? 'sidebar-open' : ''}`}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
-            
+            <Route
+              path="/register"
+              element={
+                <div className="route-page">
+                  <Register />
+                </div>
+              }
+            />
             {/* Add more protected routes here */}
           </Routes>
         </main>
