@@ -7,6 +7,7 @@ import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
 import Home from "./components/layout/Home";
+import AdminDashboard from './Pages/AdminDashboard';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,7 +16,7 @@ function AppLayout() {
   const user = { role: "therapist" };
 
   // Hide navbar/sidebar for login and register pages
-  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register" ;
 
   return (
     <>
@@ -38,6 +39,7 @@ function AppLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </main>
     </>
