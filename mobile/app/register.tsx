@@ -1,138 +1,147 @@
+// app/Register.tsx
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, View, Button, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { Link, useRouter } from 'expo-router';
-
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useAuth } from '@/hooks/use-auth';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 
 export default function RegisterScreen() {
-  const { login } = useAuth(); // We’ll log in the user after registration
-  const router = useRouter(); // Router for navigation
+  const router = useRouter();
 
   const [name, setName] = useState('');
-  const [surname, setSurname] = useState('');
-  const [idNumber, setIdNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [idNumber, setIdNumber] = useState('');
+  const [error, setError] = useState('');
 
-  const handleRegister = () => {
-    // Basic validation
-    if (!name || !surname || !idNumber || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields.');
+  const handleRegister = async () => {
+    if (!name || !email || !password || !idNumber) {
+      setError('All fields are required');
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
-      return;
+    try {
+      const response = await fetch('http://localhost:5000/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, idNumber }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Registration failed');
+
+      Alert.alert('Success', 'User registered successfully');
+      router.replace('/Login'); // go to login page
+    } catch (err: any) {
+      setError(err.message);
     }
-
-    // Registration logic (mock: just log in the user)
-    login(email, password);
-
-    // Optional success message
-    Alert.alert('Success', `Welcome ${name}! You are now registered.`);
-
-    // Redirect to login page
-    router.push('/login');
   };
 
   return (
-    <ThemedView style={styles.appBackground}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.wrapper}
-      >
-        <ThemedView lightColor="#ffffff" darkColor="#111214" style={styles.card}>
-          <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
-          <ThemedText>Fill in your details to register</ThemedText>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+    >
+      <View style={styles.card}>
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Sign up to get started</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Name"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Surname"
-            value={surname}
-            onChangeText={setSurname}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="ID Number"
-            keyboardType="numeric"
-            value={idNumber}
-            onChangeText={setIdNumber}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-          />
+        <TextInput
+          style={styles.input}
+          placeholder="Full Name"
+          value={name}
+          onChangeText={setName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="ID Number"
+          value={idNumber}
+          onChangeText={setIdNumber}
+        />
 
-          <View style={styles.buttonRow}>
-            <Button title="Register" onPress={handleRegister} />
-          </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <View style={styles.footer}>
-            <ThemedText>Already have an account?</ThemedText>
-            <Link href="/login">
-              <Link.Trigger>
-                <ThemedText type="link"> Sign in</ThemedText>
-              </Link.Trigger>
-            </Link>
-          </View>
-        </ThemedView>
-      </KeyboardAvoidingView>
-    </ThemedView>
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+          <Text style={styles.buttonText}>Sign Up</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.signupText}>
+          Already have an account?{' '}
+          <Text
+            style={styles.signupLink}
+            onPress={() => router.push('/Login')}
+          >
+            Log in
+          </Text>
+        </Text>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  appBackground: { flex: 1 },
-  wrapper: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  container: { flex: 1, backgroundColor: '#E5DDDE', justifyContent: 'center', alignItems: 'center', padding: 16 },
   card: {
     width: '100%',
-    maxWidth: 420,
-    padding: 20,
-    borderRadius: 12,
+    maxWidth: 400,
+    backgroundColor: '#E5DDDE',
+    padding: 24,
+    borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
-    gap: 8,
+    shadowRadius: 16,
   },
-  title: { marginBottom: 4 },
+  title: { fontSize: 28, fontWeight: '600', color: '#002324', marginBottom: 8 },
+  subtitle: { fontSize: 16, color: '#A1AD95', marginBottom: 24 },
   input: {
+    width: '100%',
+    backgroundColor: '#EBFACF',
     borderWidth: 1,
-    borderColor: '#e6e6e6',
-    borderRadius: 8,
+    borderColor: '#A1AD95',
+    borderRadius: 10,
     padding: 12,
-    marginTop: 8,
-    backgroundColor: 'transparent',
+    marginBottom: 16,
+    fontSize: 16,
+    color: '#002324',
   },
-  buttonRow: { marginTop: 12 },
-  footer: { marginTop: 12, flexDirection: 'row', gap: 6, alignItems: 'center' },
+  button: {
+    backgroundColor: '#002324',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  buttonText: { color: '#EBFACF', fontWeight: '600', fontSize: 16 },
+  error: {
+    color: '#d32f2f',
+    backgroundColor: '#ffebee',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  signupText: { fontSize: 14, color: '#002324', textAlign: 'center' },
+  signupLink: { color: '#002324', fontWeight: '600', textDecorationLine: 'underline' },
 });

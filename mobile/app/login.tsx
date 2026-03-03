@@ -1,92 +1,124 @@
+// app/Login.tsx
 import React, { useState } from 'react';
 import {
-  StyleSheet,
   View,
+  Text,
   TextInput,
-  Button,
-  Alert,
+  TouchableOpacity,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginScreen() {
-  const { login } = useAuth(); // get login function from AuthProvider
   const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Dummy admin credentials
-  const ADMIN_CREDENTIALS = { email: 'admin@example.com', password: 'admin123' };
+  const [error, setError] = useState('');
 
   const handleLogin = () => {
-    // --- Admin login ---
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      login({ email, role: 'admin' }); // store user in context
-      router.replace('/admin/admin-dashboard'); // redirect to admin dashboard
+    if (!email || !password) {
+      setError('Email and password are required');
       return;
     }
 
-    // --- Normal user login (dummy example) ---
+    // Dummy login logic
     if (email && password) {
-      login({ email, role: 'user' }); // store user in context
-      router.replace('/dashboard'); // redirect to user dashboard
-      return;
+      router.replace('/(tabs)/index'); // navigate to Tabs
+    } else {
+      setError('Invalid credentials');
     }
-
-    // Invalid login
-    Alert.alert('Error', 'Invalid credentials');
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.wrapper}
-      >
-        <ThemedText type="title" style={styles.title}>Welcome Back</ThemedText>
-        <ThemedText>Sign in to access your account</ThemedText>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+    >
+      <View style={styles.card}>
+        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.subtitle}>Sign in to your account</Text>
 
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder="you@example.com"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
+
         <TextInput
           style={styles.input}
-          placeholder="Password"
+          placeholder="••••••••"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
-        <View style={styles.buttonRow}>
-          <Button title="Login" onPress={handleLogin} />
-        </View>
-      </KeyboardAvoidingView>
-    </ThemedView>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Log in</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.signupText}>
+          Don't have an account?{' '}
+          <Text
+            style={styles.signupLink}
+            onPress={() => router.push('/Register')}
+          >
+            Sign up
+          </Text>
+        </Text>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 16 },
-  wrapper: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  container: { flex: 1, backgroundColor: '#E5DDDE', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#E5DDDE',
+    padding: 24,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+  },
+  title: { fontSize: 28, fontWeight: '600', color: '#002324', marginBottom: 8 },
+  subtitle: { fontSize: 16, color: '#A1AD95', marginBottom: 24 },
   input: {
     width: '100%',
+    backgroundColor: '#EBFACF',
     borderWidth: 1,
-    borderColor: '#e6e6e6',
-    borderRadius: 8,
+    borderColor: '#A1AD95',
+    borderRadius: 10,
     padding: 12,
-    marginTop: 8,
-    backgroundColor: 'transparent',
+    marginBottom: 16,
+    fontSize: 16,
+    color: '#002324',
   },
-  buttonRow: { marginTop: 16, width: '100%' },
+  button: {
+    backgroundColor: '#002324',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  buttonText: { color: '#EBFACF', fontWeight: '600', fontSize: 16 },
+  error: {
+    color: '#d32f2f',
+    backgroundColor: '#ffebee',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  signupText: { fontSize: 14, color: '#002324', textAlign: 'center' },
+  signupLink: { color: '#002324', fontWeight: '600', textDecorationLine: 'underline' },
 });
