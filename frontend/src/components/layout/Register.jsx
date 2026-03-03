@@ -9,6 +9,7 @@ function Register() {
     email: "",
     password: "",
     confirmPassword: "",
+    idNumber: "",
   });
 
   const [error, setError] = useState("");
@@ -38,6 +39,7 @@ function Register() {
           surname: form.surname,
           email: form.email,
           password: form.password,
+          idNumber: form.idNumber
         }),
       });
 
@@ -87,6 +89,21 @@ function Register() {
                 required
               />
             </div>
+            {/* ID Number */}
+            <div className="mb-3">
+            <label className="input-group">ID Number</label>
+            <input
+                type="text"
+                name="idNumber"
+                placeholder="Enter your ID Number"
+                value={form.idNumber}
+                onChange={handleChange}
+                className="form-control"
+                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }}
+                required
+            />
+            </div>
+
 
             {/* Email */}
             <div className="mb-3">
