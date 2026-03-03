@@ -52,38 +52,40 @@ function Register() {
 
   return (
     <div className="login-fullscreen">
-      <div className="login-card-wrapper" style={{ maxWidth: "450px" }}>
-        <div className="login-card">
+      <div className="login-card-wrapper" style={{ maxWidth: "500px" }}> 
+        <div className="login-card" style={{ padding: "2.5rem 2rem" }}>
           <h2>Create Account</h2>
           <p className="login-subtitle">Sign up to get started</p>
 
           <form onSubmit={handleSubmit}>
-            {/* Name + Surname */}
-            <div className="row g-2 mb-3">
-              <div className="col">
-                <label className="input-group">Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="First Name"
-                  value={form.name}
-                  onChange={handleChange}
-                  className="form-control form-control-sm"
-                  required
-                />
-              </div>
-              <div className="col">
-                <label className="input-group">Surname</label>
-                <input
-                  type="text"
-                  name="surname"
-                  placeholder="Last Name"
-                  value={form.surname}
-                  onChange={handleChange}
-                  className="form-control form-control-sm"
-                  required
-                />
-              </div>
+            {/* Name */}
+            <div className="mb-3"> 
+              <label className="input-group">Name</label>
+              <input
+                type="text"
+                name="name"
+                placeholder="First Name"
+                value={form.name}
+                onChange={handleChange}
+                className="form-control" 
+                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
+                required
+              />
+            </div>
+            
+            {/* Surname - Now below Name */}
+            <div className="mb-3">
+              <label className="input-group">Surname</label>
+              <input
+                type="text"
+                name="surname"
+                placeholder="Last Name"
+                value={form.surname}
+                onChange={handleChange}
+                className="form-control" 
+                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }}
+                required
+              />
             </div>
 
             {/* Email */}
@@ -95,12 +97,13 @@ function Register() {
                 placeholder="you@example.com"
                 value={form.email}
                 onChange={handleChange}
-                className="form-control form-control-sm"
+                className="form-control" 
+                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
                 required
               />
             </div>
 
-            {/* Password + Confirm */}
+            {/* Password + Confirm - Keeping these side by side as requested */}
             <div className="row g-2 mb-3">
               <div className="col">
                 <label className="input-group">Password</label>
@@ -110,7 +113,8 @@ function Register() {
                   placeholder="Password"
                   value={form.password}
                   onChange={handleChange}
-                  className="form-control form-control-sm"
+                  className="form-control" 
+                  style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
                   required
                 />
               </div>
@@ -122,7 +126,8 @@ function Register() {
                   placeholder="Confirm Password"
                   value={form.confirmPassword}
                   onChange={handleChange}
-                  className="form-control form-control-sm"
+                  className="form-control" 
+                  style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
                   required
                 />
               </div>
@@ -130,7 +135,7 @@ function Register() {
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" className="btn btn-dark w-100">
+            <button type="submit" className="btn btn-dark w-100" style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }}> 
               Sign Up
             </button>
           </form>
