@@ -1,11 +1,14 @@
-import { Stack } from 'expo-router';
+import React from 'react';
+import { Tabs } from 'expo-router';
+import { AuthProvider } from '../hooks/useAuth'; // <- fixed path
 
-export default function RootLayout() {
+export default function Layout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" />
-      <Stack.Screen name="Register" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <AuthProvider>
+      <Tabs screenOptions={{ headerShown: false }}>
+        <Tabs.Screen name="index" options={{ title: 'Home' }} />
+        <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      </Tabs>
+    </AuthProvider>
   );
 }
