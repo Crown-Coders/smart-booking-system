@@ -5,8 +5,8 @@ import './App.css';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
-import Home from "./components/layout/Home";
 import Register from "./components/layout/Register";
+import Home from "./components/layout/Home";
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
