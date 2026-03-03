@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -119,7 +119,7 @@ export default function Register() {
 
   return (
     <div style={styles.page}>
-      <motion.div
+      <div
         style={styles.card}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -194,7 +194,7 @@ export default function Register() {
             Sign in
           </a>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
