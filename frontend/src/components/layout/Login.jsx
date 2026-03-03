@@ -1,11 +1,13 @@
 // src/components/layout/Login.jsx
 import { useState } from "react";
-import { Link } from "react-router-dom"; // if you want a sign-up link
+import { Link, useNavigate } from "react-router-dom";
+
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate(); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,8 +26,11 @@ function Login() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Login failed");
 
+      // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
-      console.log("Login successful");
+
+      // ✅ Redirect to dashboard
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     }
