@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import TherapistDashboard from "./Therapist/TherapistDashboard";
 import Profile from "./Therapist/Profile";
-import BookingHistory from "./Therapist/BookingHistory";
 import TotalSessions from "./Therapist/TotalSessions";
 
 function App() {
