@@ -1,42 +1,53 @@
 // src/App.jsx
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import './App.css';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
 import Home from "./components/layout/Home";
+import Register from "./components/layout/Register";
 
-
-function App() {
+function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
-  // Placeholder user role, later comes from authentication
-  const user = { role: "therapist" }; // Change to "therapist" or "client" to test different menus
+  const user = { role: "therapist" };
+
+  // Hide navbar/sidebar for login and register pages
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
   return (
+    <>
+      {!isAuthPage && (
+        <>
+          <Navbar
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
+          <Sidebar
+            userRole={user.role}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        </>
+      )}
+
+      <main className={isAuthPage ? "login-fullscreen" : `content ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </main>
+    </>
+  );
+}
+
+function App() {
+  return (
     <Router>
-      <div className="app-layout">
-        <Navbar
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-        />
-
-        <Sidebar
-          userRole={user.role}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-
-        <main className={`content ${sidebarOpen ? 'sidebar-open' : ''}`}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            
-            {/* Add more protected routes here */}
-          </Routes>
-        </main>
-      </div>
+      <AppLayout />
     </Router>
   );
 }
