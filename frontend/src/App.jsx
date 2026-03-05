@@ -1,12 +1,17 @@
 // src/App.jsx
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import './App.css';
-import Sidebar from './components/layout/Sidebar';
-import Navbar from './components/layout/Navbar';
+import "./App.css";
+import Sidebar from "./components/layout/Sidebar";
+import Navbar from "./components/layout/Navbar";
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
 import Home from "./components/layout/Home";
+import TherapistDashboard from "./Therapist/TherapistDashboard";
+import Profile from "./Therapist/Profile";
+import TotalSessions from "./Therapist/TotalSessions";
+import UpcomingSessions from "./Therapist/UpcomingSessions";
+import BookingHistory from "./Therapist/BookingHistory";
 // User pages
 import UserDashboard from './Pages/users/UserDashboard';
 import MyAppointments from './Pages/users/MyAppointments';
@@ -36,23 +41,27 @@ function AppLayout() {
       
       {/* Only show sidebar on non-auth pages */}
       {!isAuthPage && (
-        <Sidebar
-          userRole={user.role}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+        <>
+          <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+          <Sidebar
+            userRole={user.role}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        </>
       )}
 
-      <main className={
-        isAuthPage 
-          ? "login-fullscreen" 
-          : `content ${sidebarOpen ? 'sidebar-open' : ''}`
-      }>
+      <main className={isAuthPage ? "login-fullscreen" : `content ${sidebarOpen ? "sidebar-open" : ""}`}>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/booking-history" element={<BookingHistory />} />
+          <Route path="/total-sessions" element={<TotalSessions />} />
+          <Route path="/upcoming-sessions" element={<UpcomingSessions />} />
           
           {/* Client routes only - these match your sidebar menu */}
           <Route path="/dashboard" element={<UserDashboard />} />
