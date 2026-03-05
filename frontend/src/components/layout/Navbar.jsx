@@ -1,9 +1,8 @@
 // src/components/layout/Navbar.jsx
 import React from 'react';
-import { NavLink } from "react-router-dom";
-import logo from '../../assets/images/logo-mental.com.png';
+import { Link } from "react-router-dom";
 
-function Navbar({ showSidebarToggle, onToggleSidebar }) {
+function Navbar() {
   return (
     <>
       <style>{`
@@ -15,24 +14,21 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
           left: 0;
           right: 0;
           z-index: 1100;
-          height: 100px;
+          height: 60px;
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: space-between; /* brand left, links right */
           padding: 0 2rem;
         }
 
         .navbar-brand {
-          color: #EBFACF;
+          color: #EBFACF;          /* soft green */
           font-size: 1.5rem;
           font-weight: 700;
           text-decoration: none;
+          letter-spacing: 0.5px;
         }
-        .navbar-logo {
-          height:100px;
-          border-radius: 8px; /* softens the square edges of the logo */
-          object-fit: contain;
-        }
+
         .navbar-brand:hover {
           color: #A1AD95;
         }
@@ -40,7 +36,6 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
         .nav-links {
           display: flex;
           gap: 1rem;
-          align-items: center;
         }
 
         .nav-link {
@@ -63,22 +58,9 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
           font-weight: 600;
         }
 
-        .hamburger {
-          background: none;
-          border: none;
-          color: #EBFACF;
-          font-size: 1.8rem;
-          cursor: pointer;
-          display: none; /* hidden on desktop by default */
-          margin-right: 1rem;
-        }
-
         @media (max-width: 768px) {
           .navbar {
             padding: 0 1rem;
-          }
-          .hamburger {
-            display: block; /* show on mobile only */
           }
           .nav-links {
             gap: 0.5rem;
@@ -94,21 +76,11 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
       `}</style>
 
       <nav className="navbar">
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {showSidebarToggle && (
-            <button className="hamburger" onClick={onToggleSidebar}>
-              ☰
-            </button>
-          )}
-        
-          <NavLink to="/" className="navbar-brand">
-            <img src={logo} alt="Mental.com Logo" className="navbar-logo" />
-          </NavLink>
-        </div>
+        <Link to="/" className="navbar-brand">Smart Booking</Link>
         <div className="nav-links">
-          <NavLink to="/" className="nav-link" end>Home</NavLink>
-          <NavLink to="/register" className="nav-link">Sign Up</NavLink>
-          <NavLink to="/login" className="nav-link">Login</NavLink>
+          <Link to="/home" className="nav-link active">Home</Link>
+          <Link to="/services" className="nav-link">Services</Link>
+          <Link to="/login" className="nav-link">Login</Link>
         </div>
       </nav>
     </>

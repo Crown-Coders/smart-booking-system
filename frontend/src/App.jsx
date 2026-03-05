@@ -1,18 +1,12 @@
 // src/App.jsx
 import { useState } from "react";
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import './App.css';
-
-// Layout components
-import Navbar from './components/layout/Navbar';
 import Sidebar from './components/layout/Sidebar';
-import Footer from './components/layout/Footer';
-
-// Pages
+import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
-import LandingPage from "./components/layout/LandingPage"; 
+import Home from "./components/layout/Home";
 // User pages
 import UserDashboard from './Pages/users/UserDashboard';
 import MyAppointments from './Pages/users/MyAppointments';
@@ -56,7 +50,7 @@ function AppLayout() {
       }>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
@@ -68,9 +62,6 @@ function AppLayout() {
           <Route path="/ai-chatbot" element={<div>AI Chatbot (Coming Soon)</div>} />
         </Routes>
       </main>
-
-      {/* Footer always visible */}
-      <Footer />
     </>
   );
 }
