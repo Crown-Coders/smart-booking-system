@@ -1,0 +1,286 @@
+/* =========================
+   GLOBAL PAGE STYLING
+   ========================= */
+
+/* =========================
+   GLOBAL RESET
+   ========================= */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* =========================
+   BODY STYLING
+   ========================= */
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f1f5f9;
+  color: #0f172a;
+
+  min-height: 100vh;
+
+  /* CHANGE #1
+     Remove flex layout so page can stretch full width */
+  display: block;
+}
+
+
+/* =========================
+   REACT ROOT CONTAINER
+   ========================= */
+
+#root {
+  width: 100%;
+
+  /* CHANGE #2
+     REMOVE this line completely if you want true full width */
+  /* max-width: 1200px; */
+
+  min-height: 100vh;
+
+  /* CHANGE #3
+     Remove padding so content can touch page edges */
+  padding: 0;
+}
+
+
+/* =========================
+   MAIN PAGE CONTAINER
+   ========================= */
+
+.page-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  /* CHANGE #4
+     remove spacing that pushes content inward */
+  gap: 0;
+}
+
+
+/* =========================
+   UPCOMING SESSIONS SECTION
+   ========================= */
+
+.upcoming-sessions {
+  width: 100%;
+
+  /* CHANGE #5
+     Remove side padding so cards stretch edge-to-edge */
+  padding: 0;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================
+   HEADER SECTION
+   ========================= */
+
+.upcoming-sessions__header {
+  border: 1px solid #dbe3ec;
+
+  /* CHANGE #6
+     Remove rounded edges for edge-to-edge layout */
+  border-radius: 0;
+
+  background-color: #ffffff;
+  padding: 1rem;
+}
+
+.upcoming-sessions__title {
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+
+.upcoming-sessions__subtitle {
+  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+
+/* =========================
+   FILTER / TOOLBAR
+   ========================= */
+
+.upcoming-sessions__toolbar {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.upcoming-sessions__chip {
+  border: 1px solid #dbe3ec;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+
+/* =========================
+   PANEL CONTAINER
+   ========================= */
+
+.upcoming-sessions__panel {
+
+  /* CHANGE #7
+     remove margin pushing content down */
+  margin-top: 0;
+
+  border: 1px solid #dbe3ec;
+
+  /* CHANGE #8
+     remove rounded edges */
+  border-radius: 0;
+
+  background-color: #ffffff;
+
+  /* ensures full width */
+  width: 100%;
+
+  padding: 0;
+}
+
+.upcoming-sessions__panel-title {
+  padding: 1rem;
+  font-size: 1.1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+
+/* =========================
+   SESSION GRID
+   ========================= */
+
+.upcoming-sessions__grid {
+
+  /* CHANGE #9
+     remove margin shrinking container */
+  margin: 0;
+
+  display: grid;
+
+  /* ensures cards stretch full width */
+  grid-template-columns: 1fr;
+
+  width: 100%;
+}
+
+
+/* =========================
+   SESSION CARD
+   ========================= */
+
+.upcoming-sessions__card {
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+
+  /* CHANGE #10
+     remove rounding so cards align with page edges */
+  border-radius: 0;
+
+  background-color: #f8fafc;
+
+  padding: 1rem;
+
+  width: 100%;
+
+  /* OPTIONAL CHANGE
+     increase this if you want taller cards */
+  min-height: 160px;
+}
+
+
+/* Client name */
+
+.upcoming-sessions__name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #111827;
+}
+
+
+/* Session metadata */
+
+.upcoming-sessions__meta {
+  margin-top: 0.4rem;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+
+/* =========================
+   VIEW BUTTON
+   ========================= */
+
+.upcoming-sessions__view-btn {
+  margin-top: 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+}
+
+.upcoming-sessions__view-btn:hover {
+  background-color: #f1f5f9;
+}
+
+
+/* =========================
+   SESSION DETAILS
+   ========================= */
+
+.upcoming-sessions__details {
+  border-top: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  padding: 1rem;
+}
+
+.upcoming-sessions__detail-text {
+  margin: 0.3rem 0;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+
+/* =========================
+   EMPTY STATE
+   ========================= */
+
+.upcoming-sessions__empty {
+  padding: 1rem;
+  color: #64748b;
+}
+
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width: 768px) {
+
+  /* CHANGE #11
+     Add padding back for mobile so UI isn't glued to screen */
+  .upcoming-sessions {
+    padding: 16px;
+  }
+
+  .upcoming-sessions__title {
+    font-size: 1.3rem;
+  }
+
+}

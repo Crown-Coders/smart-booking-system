@@ -1,14 +1,17 @@
 // src/App.jsx
-import { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import './App.css';
-import Sidebar from './components/layout/Sidebar';
-import Navbar from './components/layout/Navbar';
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import "./App.css";
+import Sidebar from "./components/layout/Sidebar";
+import Navbar from "./components/layout/Navbar";
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
-import LandingPage from "./components/layout/LandingPage";
-import Footer from "./components/layout/Footer";
-
+import Home from "./components/layout/Home";
+import TherapistDashboard from "./Therapist/TherapistDashboard";
+import Profile from "./Therapist/Profile";
+import TotalSessions from "./Therapist/TotalSessions";
+import UpcomingSessions from "./Therapist/UpcomingSessions";
+import BookingHistory from "./Therapist/BookingHistory";
 // User pages
 import UserDashboard from './Pages/users/UserDashboard';
 import MyAppointments from './Pages/users/MyAppointments';
@@ -60,36 +63,40 @@ function AppLayout() {
   };
 
   return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Navbar
-      showSidebarToggle={showSidebar}
-      onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-      isAuthenticated={isAuthenticated}
-      onLogout={handleLogout}
-    />
-
-      {showSidebar && (
-        <Sidebar
-          userRole={user.role}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+    <>
+      {/* Always show navbar */}
+      {showNavbar && (
+        <Navbar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
         />
       )}
+      
+      {/* Only show sidebar on non-auth pages */}
+      {!isAuthPage && (
+        <>
+          <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+          <Sidebar
+            userRole={user.role}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        </>
+      )}
 
-      <main className={
-        isAuthPage
-          ? "login-fullscreen"
-          : `content ${shouldShiftContent ? 'sidebar-open' : ''}` 
-      }
-       style={{ flex: 1 }} // ← this makes main grow to push footer down
-      >
+      <main className={isAuthPage ? "login-fullscreen" : `content ${sidebarOpen ? "sidebar-open" : ""}`}>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="/register" element={<Register onRegisterSuccess={handleLoginSuccess} />} />
-
-          {/* Client dashboard routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/booking-history" element={<BookingHistory />} />
+          <Route path="/total-sessions" element={<TotalSessions />} />
+          <Route path="/upcoming-sessions" element={<UpcomingSessions />} />
+          
+          {/* Client routes only - these match your sidebar menu */}
           <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/appointments" element={<MyAppointments />} />
           <Route path="/calendar" element={<Calendar />} />
