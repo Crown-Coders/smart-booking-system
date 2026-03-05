@@ -6,7 +6,7 @@ import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
-import Home from "./components/layout/Home";
+import LandingPage from "./components/layout/LandingPage";
 import TherapistDashboard from "./Therapist/TherapistDashboard";
 import Profile from "./Therapist/Profile";
 import TotalSessions from "./Therapist/TotalSessions";
@@ -87,7 +87,7 @@ function AppLayout() {
       <main className={isAuthPage ? "login-fullscreen" : `content ${sidebarOpen ? "sidebar-open" : ""}`}>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Home />} />
+           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
