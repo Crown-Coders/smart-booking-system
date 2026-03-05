@@ -1,6 +1,5 @@
 import React from 'react';
-import { NavLink } from "react-router-dom";
-import logo from '../../assets/images/logo-mental.com.png';
+import { Link } from "react-router-dom";
 
 function Navbar({ showSidebarToggle, onToggleSidebar, isAuthenticated, onLogout }) {
   return (
@@ -17,15 +16,16 @@ function Navbar({ showSidebarToggle, onToggleSidebar, isAuthenticated, onLogout 
           height: 60px;
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: space-between; /* brand left, links right */
           padding: 0 2rem;
         }
 
         .navbar-brand {
-          color: #EBFACF;
+          color: #EBFACF;          /* soft green */
           font-size: 1.5rem;
           font-weight: 700;
           text-decoration: none;
+          letter-spacing: 0.5px;
         }
         .navbar-logo {
           height:60px;
@@ -39,7 +39,6 @@ function Navbar({ showSidebarToggle, onToggleSidebar, isAuthenticated, onLogout 
         .nav-links {
           display: flex;
           gap: 1rem;
-          align-items: center;
         }
 
         .nav-link {

@@ -22,9 +22,11 @@ module.exports = {
         type: Sequelize.INTEGER
       },
 status: {
-  type:  DataTypes.ENUM('PENDING','CONFIRMED','CANCELLED'),
+  type: Sequelize.STRING,
+  allowNull: false,
   defaultValue: 'PENDING'
 },
+
 
       paymentIntentId: {
         type: Sequelize.STRING

@@ -1,14 +1,9 @@
-import { useState, useEffect } from "react";
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+// src/App.jsx
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import './App.css';
-
-// Layout components
-import Navbar from './components/layout/Navbar';
 import Sidebar from './components/layout/Sidebar';
-import Footer from './components/layout/Footer';
-
-// Pages
+import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
 import LandingPage from "./components/layout/LandingPage";

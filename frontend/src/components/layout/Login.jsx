@@ -1,6 +1,7 @@
+// src/components/layout/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import logo from '../../assets/images/logo-mental.com.png';
+
 
 function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState("");
@@ -38,73 +39,63 @@ function Login({ onLoginSuccess }) {
   };
 
   return (
-    <div className="login-fullscreen">  
-      <div className="login-card-wrapper">
-        <div className="login-card">
-          
-  
-        
-          <img 
-            src={logo}
-            alt="Mental.com Logo" 
-            style={{ width: "100px", marginBottom: "1rem", borderRadius: "10px" }} 
-          />
-          
-          <h2>Welcome Back</h2>
-          <p className="login-subtitle">Sign in to your account</p>
+    <div className="login-card-wrapper">
+      <div className="login-card">
+        <h2>Welcome Back</h2>
+        <p className="login-subtitle">Sign in to your account</p>
 
-          <form onSubmit={handleSubmit}>
-            <div className="input-group" style={{ marginBottom: "1.5rem" }}> 
-              <label>Email</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{ 
-                  padding: "0.6rem 0.75rem", 
-                  fontSize: "1rem",
-                  backgroundColor: "white"
-                }}
-              />
-            </div>
-
-            <div className="input-group" style={{ marginBottom: "1.5rem" }}>
-              <label>Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ 
-                  padding: "0.6rem 0.75rem", 
-                  fontSize: "1rem",
-                  backgroundColor: "white"
-                }}
-              />
-            </div>
-
-            {error && <div className="error-message">{error}</div>}
-
-            <button 
-              type="submit"
+        <form onSubmit={handleSubmit}>
+          <div className="input-group" style={{ marginBottom: "1.5rem" }}> 
+            <label>Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               style={{ 
-                padding: "0.8rem", 
-                fontSize: "1.1rem",
-                width: "100%",
-                marginTop: "0.5rem" 
+                padding: "0.6rem 0.75rem", 
+                fontSize: "1rem",
+                backgroundColor: "white"
               }}
-            >
-              Log in
-            </button>
-          </form>
+            />
+          </div>
 
-          <p className="signup-link">
-            Don't have an account? <Link to="/register">Sign up</Link>
-          </p>
-        </div>
+          <div className="input-group" style={{ marginBottom: "1.5rem" }}>
+            <label>Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ 
+                padding: "0.6rem 0.75rem", 
+                fontSize: "1rem",
+                backgroundColor: "white"
+              }}
+            />
+          </div>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <button 
+            type="submit"
+            style={{ 
+              padding: "0.6rem 0.75rem", 
+              fontSize: "1rem",
+              width: "100%",
+              marginTop: "0.5rem" 
+            }}
+          >
+            Log in
+          </button>
+        </form>
+
+        <p className="signup-link">
+          Don't have an account? <Link to="/register">Sign up</Link>
+        </p>
+
       </div>
     </div>
   );
