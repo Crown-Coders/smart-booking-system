@@ -71,7 +71,7 @@ function AppLayout() {
 
       {/* Footer always visible */}
       <Footer />
-    </div>
+    </>
   );
 }
 
