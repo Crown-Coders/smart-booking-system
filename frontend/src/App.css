@@ -116,3 +116,62 @@
   border-bottom-color: #002324;
 }
 
+/* -------------------- App Layout -------------------- */
+.content {
+  margin-top: 60px;
+  margin-left: 240px;
+  min-height: calc(100vh - 60px);
+  padding: 1.25rem;
+  box-sizing: border-box;
+  display: block;
+  width: calc(100% - 240px);
+}
+
+.content > section {
+  width: 100%;
+}
+
+.content > .total-sessions {
+  width: calc(100% + 2.5rem);
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  box-sizing: border-box;
+}
+
+.content > .upcoming-sessions,
+.content > .booking-history {
+  width: calc(100% + 2.5rem);
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .content {
+    margin-left: 0;
+    padding: 1rem;
+    width: 100%;
+  }
+
+  .content > .total-sessions {
+    width: calc(100% + 2rem);
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .content > .upcoming-sessions,
+  .content > .booking-history {
+    width: calc(100% + 2rem);
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+

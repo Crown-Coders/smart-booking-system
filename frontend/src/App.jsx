@@ -11,6 +11,7 @@ import TherapistDashboard from "./Therapist/TherapistDashboard";
 import Profile from "./Therapist/Profile";
 import TotalSessions from "./Therapist/TotalSessions";
 import UpcomingSessions from "./Therapist/UpcomingSessions";
+import BookingHistory from "./Therapist/BookingHistory";
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
