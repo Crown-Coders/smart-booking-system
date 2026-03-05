@@ -107,7 +107,7 @@ function AppLayout() {
 
       <Footer />
     
-    </div>
+
   );
 }
 
