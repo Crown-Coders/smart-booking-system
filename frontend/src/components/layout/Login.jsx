@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom"; 
+import { Link, useNavigate } from "react-router-dom";
 import logo from '../../assets/images/logo-mental.com.png';
-
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate(); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,8 +25,11 @@ function Login() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Login failed");
 
+      // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
-      console.log("Login successful");
+
+      // ✅ Redirect to dashboard
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     }
@@ -38,6 +41,7 @@ function Login() {
         <div className="login-card">
           
   
+        
           <img 
             src={logo}
             alt="Mental.com Logo" 
