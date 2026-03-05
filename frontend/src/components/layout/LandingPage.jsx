@@ -5,7 +5,6 @@ import heroImg from "../../assets/images/hp_illustrated_buttons_desktop_individu
 import whyUsImg from "../../assets/images/hp_illustrated_buttons_mobile_couples.png";
 import feature1 from "../../assets/images/green-woman.png";
 import feature2 from "../../assets/images/hp_illustrated_buttons_desktop_teen_default.png";
-import trustImg from "../../assets/images/divider-main-4-mobile.png";
 import howItWorksImg from "../../assets/images/image-how-it-works-3.png";
 import therapyConceptImg from "../../assets/images/psychotherapy-abstract-concept-illustration-vector.jpg";
 
