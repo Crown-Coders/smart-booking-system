@@ -21,10 +21,12 @@ module.exports = {
       idNumber: {
         type: Sequelize.STRING
       },
-role: {
-  type:  DataTypes.ENUM('CLIENT','THERAPIST','ADMIN'),
-  defaultValue: 'CLIENT'
-},
+  role: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    defaultValue: 'CLIENT'
+  },
+
 
       isActive: {
         type: Sequelize.BOOLEAN

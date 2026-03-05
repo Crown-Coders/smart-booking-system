@@ -28,9 +28,11 @@ function Login() {
 
       // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
-
-      // ✅ Redirect to dashboard
-      navigate("/dashboard");
+      if (data.user && data.user.isSuperUser) {
+        navigate("/admin-dashboard"); // redirect admin
+      } else {
+        navigate("/dashboard"); // redirect regular user
+      }
     } catch (err) {
       setError(err.message);
     }
