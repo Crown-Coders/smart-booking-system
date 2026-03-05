@@ -186,7 +186,6 @@ function Sidebar({ userRole, isOpen, onClose }) {
             >
               {item.name}
               onClick={() => handleNavigation(item)} // UPDATED: use navigation function
-            >
               {item.name}
               {item.disabled && <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: COLORS.accent }}>(coming soon)</span>}
             </li>
