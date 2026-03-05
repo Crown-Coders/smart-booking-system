@@ -228,6 +228,7 @@ function MyAppointments() {
           Book New Appointment
         </button>
 
+
         {/* View Modal */}
         <Modal show={showViewModal} onHide={() => setShowViewModal(false)} centered>
           <Modal.Header closeButton>

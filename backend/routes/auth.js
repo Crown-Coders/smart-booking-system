@@ -4,17 +4,18 @@ const bcrypt = require('bcryptjs');
 const { User } = require('../models');
 const jwt = require("jsonwebtoken");
 
-
 // --------------------
 // REGISTER
 // --------------------
 router.post('/register', async (req, res) => {
   const { name, surname, email, password, idNumber } = req.body;
 
+  // 1️⃣ Validate input
   if (!name || !surname || !email || !password || !idNumber)
     return res.status(400).json({ message: 'All fields are required' });
 
   try {
+    // 2️⃣ Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser)
       return res.status(400).json({ message: 'Email already exists' });
@@ -56,7 +57,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
 // --------------------
 // LOGIN
 // --------------------
@@ -97,6 +97,5 @@ router.post("/login", async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
-
 
 module.exports = router;

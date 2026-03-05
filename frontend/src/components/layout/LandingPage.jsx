@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-
 import heroImg from "../../assets/images/hp_illustrated_buttons_desktop_individual_default.png";
 import whyUsImg from "../../assets/images/hp_illustrated_buttons_mobile_couples.png";
 import feature1 from "../../assets/images/green-woman.png";

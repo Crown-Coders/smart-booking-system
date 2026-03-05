@@ -15,10 +15,12 @@ module.exports = {
       currency: {
         type: Sequelize.STRING
       },
-  status: {
-    type:  DataTypes.ENUM('PENDING', 'COMPLETED', 'FAILED'),
-    defaultValue: 'PENDING'
-  },
+      status: {
+        type: Sequelize.STRING,   // store as string
+        allowNull: false,
+        defaultValue: 'PENDING'
+      },
+
       transactionReference: {
         type: Sequelize.STRING
       },

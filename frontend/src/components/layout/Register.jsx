@@ -1,9 +1,7 @@
 // src/components/layout/Register.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import logo from '../../assets/images/logo-mental.com.png';
-
-
+import logo from "../../assets/images/logo-mental.com.png";
 
 function Register() {
   const [form, setForm] = useState({
@@ -59,18 +57,10 @@ function Register() {
     <div className="login-fullscreen">
       <div className="login-card-wrapper" style={{ maxWidth: "500px" }}> 
         <div className="login-card" style={{ padding: "2.5rem 2rem" }}>
-
-       
-          <img 
-            src={logo}
-            alt="Mental.com Logo" 
-            style={{ width: "100px", marginBottom: "1rem", borderRadius: "10px" }} 
-          />
-          
+           <img src={logo} alt="Mental.com Logo" className="navbar-logo" />
+           
           <h2>Create Account</h2>
           <p className="login-subtitle">Sign up to get started</p>
-
-         
 
           <form onSubmit={handleSubmit}>
             {/* Name */}

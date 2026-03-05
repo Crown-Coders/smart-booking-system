@@ -40,6 +40,7 @@ function Calendar() {
     setSelectedDate(null);
   };
 
+  
   const goToToday = () => {
     setCurrentDate(new Date());
     setSelectedDate(null);
