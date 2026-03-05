@@ -1,7 +1,8 @@
 import axios from "axios";
 
-const API = axios.create({
-  baseURL: "http://172.26.80.1:5000/api",
+// Replace with your PC IP, not localhost
+const api = axios.create({
+  baseURL: "http://172.20.6.37:5000", 
 });
 
-export default API;
+export default api;
