@@ -93,21 +93,22 @@ const MENU_BY_ROLE = {
     { name: "Upcoming Sessions", path: "/upcoming-sessions" },
     { name: "Booking History", path: "/booking-history" },
     { name: "AI Chatbot", disabled: true },
+/*  ROLE → MENU MAP - UPDATED with paths */
   ],
   client: [
-    { name: "Dashboard" },
-    { name: "My Appointments" },
-    { name: "Calendar" },
-    { name: "Messages" },
-    { name: "AI Chatbot", disabled: true },
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "My Appointments", path: "/appointments" },
+    { name: "Calendar", path: "/calendar" },
+    { name: "Messages", path: "/messages" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
   admin: [
-    { name: "Dashboard" },
-    { name: "Users" },
-    { name: "Therapists" },
-    { name: "Reports" },
-    { name: "System Settings" },
-    { name: "AI Chatbot", disabled: true },
+    { name: "Dashboard", path: "/admin" },
+    { name: "Users", path: "/admin/users" },
+    { name: "Therapists", path: "/admin/therapists" },
+    { name: "Reports", path: "/admin/reports" },
+    { name: "System Settings", path: "/admin/settings" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
 };
 
@@ -129,6 +130,14 @@ function Sidebar({ userRole, isOpen, onClose }) {
   const sidebarStyle = {
     ...sidebarBase,
     transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
+  };
+
+  // ADDED: Function to handle navigation
+  const handleNavigation = (item) => {
+    if (!item.disabled && item.path) {
+      navigate(item.path);
+      if (isMobile) onClose(); // Close sidebar on mobile after navigation
+    }
   };
 
   return (
@@ -162,8 +171,8 @@ function Sidebar({ userRole, isOpen, onClose }) {
               key={item.name}
               style={{
                 ...navItemStyle,
-                ...(isActive ? activeStyle : {}),
                 ...(hovered === index ? hoverStyle : {}),
+                ...(isActive ? hoverStyle : {}), // Use hover style for active state (matches original design)
                 ...(item.disabled ? disabledStyle : {}),
               }}
               onMouseEnter={() => setHovered(index)}
@@ -176,6 +185,10 @@ function Sidebar({ userRole, isOpen, onClose }) {
               }}
             >
               {item.name}
+              onClick={() => handleNavigation(item)} // UPDATED: use navigation function
+            >
+              {item.name}
+              {item.disabled && <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: COLORS.accent }}>(coming soon)</span>}
             </li>
           );
         })}

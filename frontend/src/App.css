@@ -8,12 +8,14 @@
   align-items: center;
   background-color: #FFFFFF;
   box-sizing: border-box;
+  padding-top: 20px !important; /* Push content below navbar (70px + 20px extra) */
 }
 
 .login-card-wrapper {
   width: 100%;
   max-width: 400px;
   padding: 2rem;
+  margin-top: 0; /* Remove any auto margin */
 }
 
 .login-card {
@@ -175,3 +177,21 @@
   }
 }
 
+/* When sidebar is open on desktop */
+@media (min-width: 769px) {
+  .content.sidebar-open {
+    margin-left: 240px; /* Width of your sidebar */
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .content {
+    margin-top: 60px; /* Smaller navbar on mobile */
+    padding: 1rem;
+  }
+  
+  .login-fullscreen {
+    padding-top: 70px !important; /* Smaller padding for mobile navbar */
+  }
+}

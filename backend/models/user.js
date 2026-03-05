@@ -10,30 +10,51 @@ module.exports = (sequelize, DataTypes) => {
 
   User.init({
     name: {
-      type: DataTypes.STRING,   // ✅ use DataTypes
+      type: DataTypes.STRING,
       allowNull: false
     },
+
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true
     },
+
     password: {
       type: DataTypes.STRING,
       allowNull: false
     },
+
     idNumber: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    role: {
-      type: DataTypes.ENUM('CLIENT', 'THERAPIST', 'ADMIN'),  // ✅ DataTypes.ENUM with values
-      defaultValue: 'CLIENT'
+
+  role: {
+    type: DataTypes.STRING,
+    defaultValue: 'CLIENT',
+    validate: {
+      isIn: [['CLIENT', 'THERAPIST', 'ADMIN', 'SUPERUSER']]
+    }
+  },
+
+
+    // Django-style fields
+    isStaff: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
+
+    isSuperUser: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
     }
+
   }, {
     sequelize,
     modelName: 'User',
