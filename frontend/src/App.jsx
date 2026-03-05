@@ -105,9 +105,8 @@ function AppLayout() {
         </Routes>
       </main>
 
-      <Footer />
-    
-
+        <Footer />
+    </>
   );
 }
 
