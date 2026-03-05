@@ -12,7 +12,7 @@ import Footer from './components/layout/Footer';
 // Pages
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
-import Home from "./components/layout/Home";
+import LandingPage from "./components/layout/LandingPage"; 
 // User pages
 import UserDashboard from './Pages/users/UserDashboard';
 import MyAppointments from './Pages/users/MyAppointments';
@@ -56,7 +56,7 @@ function AppLayout() {
       }>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
