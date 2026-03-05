@@ -7,39 +7,59 @@ import Navbar from './components/layout/Navbar';
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
 import Home from "./components/layout/Home";
-import AdminDashboard from './Pages/AdminDashboard';
+// User pages
+import UserDashboard from './Pages/users/UserDashboard';
+import MyAppointments from './Pages/users/MyAppointments';
+import Calendar from './Pages/users/Calendar';
+import Messages from './Pages/users/Messages';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  const user = { role: "therapist" };
+  // Fixed to client role only
+  const user = { role: "client" };
 
-  // Hide navbar/sidebar for login and register pages
-  const isAuthPage = location.pathname === "/login" || location.pathname === "/register" ;
+  // Show navbar on ALL pages
+  const showNavbar = true;
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
   return (
     <>
+      {/* Always show navbar */}
+      {showNavbar && (
+        <Navbar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
+      )}
+      
+      {/* Only show sidebar on non-auth pages */}
       {!isAuthPage && (
-        <>
-          <Navbar
-            sidebarOpen={sidebarOpen}
-            setSidebarOpen={setSidebarOpen}
-          />
-          <Sidebar
-            userRole={user.role}
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
-        </>
+        <Sidebar
+          userRole={user.role}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
       )}
 
-      <main className={isAuthPage ? "login-fullscreen" : `content ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <main className={
+        isAuthPage 
+          ? "login-fullscreen" 
+          : `content ${sidebarOpen ? 'sidebar-open' : ''}`
+      }>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          
+          {/* Client routes only - these match your sidebar menu */}
+          <Route path="/dashboard" element={<UserDashboard />} />
+          <Route path="/appointments" element={<MyAppointments />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/ai-chatbot" element={<div>AI Chatbot (Coming Soon)</div>} />
         </Routes>
       </main>
     </>
