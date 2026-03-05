@@ -1,5 +1,6 @@
 // src/components/layout/Sidebar.jsx
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom"; // ADDED for routing
 
 /* ===== COLOR PALETTE ===== */
 const COLORS = {
@@ -81,38 +82,40 @@ const disabledStyle = {
   color: COLORS.disabled,
 };
 
-/*  ROLE → MENU MAP */
+/*  ROLE → MENU MAP - UPDATED with paths */
 const MENU_BY_ROLE = {
   therapist: [
-    { name: "Dashboard" },
-    { name: "Appointments" },
-    { name: "Calendar" },
-    { name: "Clients" },
-    { name: "Profile" },
-    { name: "AI Chatbot", disabled: true },
+    { name: "Dashboard", path: "/therapist/dashboard" },
+    { name: "Appointments", path: "/therapist/appointments" },
+    { name: "Calendar", path: "/therapist/calendar" },
+    { name: "Clients", path: "/therapist/clients" },
+    { name: "Profile", path: "/therapist/profile" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
 
   client: [
-    { name: "Dashboard" },
-    { name: "My Appointments" },
-    { name: "Calendar" },
-    { name: "Messages" },
-    { name: "AI Chatbot", disabled: true },
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "My Appointments", path: "/appointments" },
+    { name: "Calendar", path: "/calendar" },
+    { name: "Messages", path: "/messages" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
 
   admin: [
-    { name: "Dashboard" },
-    { name: "Users" },
-    { name: "Therapists" },
-    { name: "Reports" },
-    { name: "System Settings" },
-    { name: "AI Chatbot", disabled: true },
+    { name: "Dashboard", path: "/admin" },
+    { name: "Users", path: "/admin/users" },
+    { name: "Therapists", path: "/admin/therapists" },
+    { name: "Reports", path: "/admin/reports" },
+    { name: "System Settings", path: "/admin/settings" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
 };
 
 function Sidebar({ userRole, isOpen, onClose }) {
   const [hovered, setHovered] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const navigate = useNavigate(); // ADDED for navigation
+  const location = useLocation(); // ADDED to check active route
 
   // Handle mobile responsiveness
   useEffect(() => {
@@ -127,6 +130,14 @@ function Sidebar({ userRole, isOpen, onClose }) {
   const sidebarStyle = {
     ...sidebarBase,
     transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
+  };
+
+  // ADDED: Function to handle navigation
+  const handleNavigation = (item) => {
+    if (!item.disabled && item.path) {
+      navigate(item.path);
+      if (isMobile) onClose(); // Close sidebar on mobile after navigation
+    }
   };
 
   return (
@@ -153,27 +164,28 @@ function Sidebar({ userRole, isOpen, onClose }) {
 
       {/* Navigation items */}
       <ul style={navStyle}>
-        {menuItems.map((item, index) => (
-          <li
-            key={item.name}
-            style={{
-              ...navItemStyle,
-              ...(hovered === index ? hoverStyle : {}),
-              ...(item.disabled ? disabledStyle : {}),
-            }}
-            onMouseEnter={() => setHovered(index)}
-            onMouseLeave={() => setHovered(null)}
-            onClick={() => {
-              if (!item.disabled) {
-                console.log(`Navigating to ${item.name}`);
-                // Add actual navigation logic here (e.g., useNavigate)
-                if (isMobile) onClose();
-              }
-            }}
-          >
-            {item.name}
-          </li>
-        ))}
+        {menuItems.map((item, index) => {
+          // ADDED: Check if this item matches the current route
+          const isActive = location.pathname === item.path;
+          
+          return (
+            <li
+              key={item.name}
+              style={{
+                ...navItemStyle,
+                ...(hovered === index ? hoverStyle : {}),
+                ...(isActive ? hoverStyle : {}), // Use hover style for active state (matches original design)
+                ...(item.disabled ? disabledStyle : {}),
+              }}
+              onMouseEnter={() => setHovered(index)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => handleNavigation(item)} // UPDATED: use navigation function
+            >
+              {item.name}
+              {item.disabled && <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: COLORS.accent }}>(coming soon)</span>}
+            </li>
+          );
+        })}
       </ul>
     </aside>
   );
