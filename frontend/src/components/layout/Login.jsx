@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from '../../assets/images/logo-mental.com.png';
 
-function Login() {
+function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,7 +27,9 @@ function Login() {
 
       // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
-
+      
+  // ✅ Notify AppLayout that user is authenticated
+      onLoginSuccess();
       // ✅ Redirect to dashboard
       navigate("/dashboard");
     } catch (err) {

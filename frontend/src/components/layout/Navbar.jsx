@@ -1,9 +1,8 @@
-// src/components/layout/Navbar.jsx
 import React from 'react';
 import { NavLink } from "react-router-dom";
 import logo from '../../assets/images/logo-mental.com.png';
 
-function Navbar({ showSidebarToggle, onToggleSidebar }) {
+function Navbar({ showSidebarToggle, onToggleSidebar, isAuthenticated, onLogout }) {
   return (
     <>
       <style>{`
@@ -15,7 +14,7 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
           left: 0;
           right: 0;
           z-index: 1100;
-          height: 100px;
+          height: 60px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -29,8 +28,8 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
           text-decoration: none;
         }
         .navbar-logo {
-          height:100px;
-          border-radius: 8px; /* softens the square edges of the logo */
+          height:60px;
+          border-radius: 8px;
           object-fit: contain;
         }
         .navbar-brand:hover {
@@ -63,13 +62,30 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
           font-weight: 600;
         }
 
+        .logout-btn {
+          background: transparent;
+          border: 1px solid #E5DDDE;
+          color: #E5DDDE;
+          padding: 0.4rem 1rem;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+          background-color: #A1AD95;
+          color: #002324;
+          border-color: #A1AD95;
+        }
+
         .hamburger {
           background: none;
           border: none;
           color: #EBFACF;
           font-size: 1.8rem;
           cursor: pointer;
-          display: none; /* hidden on desktop by default */
+          display: none;
           margin-right: 1rem;
         }
 
@@ -78,7 +94,7 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
             padding: 0 1rem;
           }
           .hamburger {
-            display: block; /* show on mobile only */
+            display: block;
           }
           .nav-links {
             gap: 0.5rem;
@@ -100,15 +116,25 @@ function Navbar({ showSidebarToggle, onToggleSidebar }) {
               ☰
             </button>
           )}
-        
           <NavLink to="/" className="navbar-brand">
             <img src={logo} alt="Mental.com Logo" className="navbar-logo" />
           </NavLink>
         </div>
+
         <div className="nav-links">
           <NavLink to="/" className="nav-link" end>Home</NavLink>
-          <NavLink to="/register" className="nav-link">Sign Up</NavLink>
-          <NavLink to="/login" className="nav-link">Login</NavLink>
+
+          {isAuthenticated ? (
+            <>
+              <NavLink to="/dashboard" className="nav-link">Dashboard</NavLink>
+              <button onClick={onLogout} className="logout-btn">Logout</button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/register" className="nav-link">Sign Up</NavLink>
+              <NavLink to="/login" className="nav-link">Login</NavLink>
+            </>
+          )}
         </div>
       </nav>
     </>
