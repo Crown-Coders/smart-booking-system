@@ -1,109 +1,234 @@
-import React, { useRef, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated, Image, Dimensions } from "react-native";
+import React, { useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Animated,
+  ImageBackground
+} from "react-native";
+
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-const { width } = Dimensions.get("window");
+// Import your screens
+import MyBookingsScreen from "./bookings";
+import CalendarScreen from "./calendar";
+import MessagingScreen from "./messaging";
 
-// ----- DASHBOARD -----
+// --- DASHBOARD SCREEN ---
 function DashboardScreen({ navigation }) {
   const router = useRouter();
-  const handleLogout = () => router.replace("/");
-  const handleProfile = () => router.push("/user/profile");
+  const scale = useRef(new Animated.Value(1)).current;
+  const moodScale = useRef(new Animated.Value(1)).current;
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
+  const [selectedMood, setSelectedMood] = useState(null);
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 600, useNativeDriver: true }),
+  // --- CARD PRESS ---
+  const pressIn = () => {
+    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
+  };
+
+  const pressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  // --- MOOD PRESS ---
+  const handleMoodPress = (mood) => {
+    setSelectedMood(mood);
+    Animated.sequence([
+      Animated.spring(moodScale, { toValue: 1.4, useNativeDriver: true }),
+      Animated.spring(moodScale, { toValue: 1, useNativeDriver: true })
     ]).start();
-  }, []);
-
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const onPressIn = () => Animated.spring(scaleValue, { toValue: 0.97, useNativeDriver: true }).start();
-  const onPressOut = () => Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true }).start();
-
-  const actions = [
-    { title: "🛋️ Browse Services", subtitle: "Explore sessions", bg: styles.cardBg1, route: "/user/services" },
-    { title: "📅 My Bookings", subtitle: "Upcoming sessions", bg: styles.cardBg2, route: "/user/bookings" },
-    { title: "🤖 AI Assistant", subtitle: "Get help", bg: styles.cardBg3, route: "/user/ai-assistant" },
-  ];
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Navbar */}
-      <View style={styles.navBar}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <MaterialIcons name="menu" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>My Dashboard</Text>
-        <View style={styles.navIcons}>
-          <TouchableOpacity onPress={handleProfile} style={styles.iconButton}>
-            <MaterialIcons name="person" size={24} color="#000" />
+    <ImageBackground
+      source={require("../../assets/images/splash.png")}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+
+        {/* NAVBAR */}
+        <View style={styles.navBar}>
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <MaterialIcons name="menu" size={28} color="#002324"/>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout} style={styles.iconButton}>
-            <MaterialIcons name="logout" size={24} color="#000" />
-          </TouchableOpacity>
+
+          <Text style={styles.navTitle}>My Dashboard</Text>
+
+          <View style={styles.navIcons}>
+            <TouchableOpacity onPress={() => router.push("/user/profile")}>
+              <MaterialIcons name="person" size={24} color="#000"/>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => router.replace("/")}>
+              <MaterialIcons name="logout" size={24} color="#000"/>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* Welcome */}
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }] }}>
-        <Text style={styles.welcomeTitle}>Welcome Back!</Text>
-        <Text style={styles.welcomeSubtitle}>Your journey to healing 🌿</Text>
-      </Animated.View>
+        {/* WELCOME */}
+        <Text style={styles.welcomeTitle}>Welcome Back</Text>
+        <Text style={styles.subtitle}>Your healing journey continues 🌿</Text>
 
-      {/* Horizontal Cards */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-        {actions.map((action, idx) => (
-          <Animated.View key={idx} style={styles.cardWrapper}>
+        {/* CARDS */}
+        <View style={styles.cardsWrapper}>
+
+          <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
             <TouchableOpacity
-              style={[styles.card, action.bg]}
-              onPress={() => router.push(action.route)}
-              onPressIn={onPressIn}
-              onPressOut={onPressOut}
-              activeOpacity={0.9}
+              onPress={() => router.push("/user/services")}
+              onPressIn={pressIn}
+              onPressOut={pressOut}
             >
-              <Image source={require("../../assets/images/splash.png")} style={styles.cardLogo} />
-              <Text style={styles.cardTitle}>{action.title}</Text>
-              <Text style={styles.cardSubtitle}>{action.subtitle}</Text>
+              <MaterialIcons name="spa" size={32} color="#2F5D50" />
+              <Text style={styles.cardTitle}>Browse Services</Text>
+              <Text style={styles.cardText}>Find therapy sessions</Text>
             </TouchableOpacity>
           </Animated.View>
-        ))}
-      </ScrollView>
 
-      {/* Upcoming Booking */}
-      <Text style={styles.sectionTitle}>Upcoming</Text>
-      <View style={styles.upcomingCard}>
-        <Text style={styles.bookingTitle}>Cognitive Therapy</Text>
-        <Text style={styles.bookingDetail}>📅 10 Mar 2026</Text>
-        <Text style={styles.bookingDetail}>⏰ 14:00 - 15:00</Text>
-        <Text style={styles.bookingDetail}>👨‍⚕️ Dr. Smith</Text>
-      </View>
-    </ScrollView>
+          <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+            <TouchableOpacity
+              onPress={() => router.push("/user/bookings")}
+              onPressIn={pressIn}
+              onPressOut={pressOut}
+            >
+              <MaterialIcons name="event" size={32} color="#2F5D50" />
+              <Text style={styles.cardTitle}>My Bookings</Text>
+              <Text style={styles.cardText}>Manage your sessions</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+            <TouchableOpacity
+              onPress={() => router.push("/user/ai-assistant")}
+              onPressIn={pressIn}
+              onPressOut={pressOut}
+            >
+              <MaterialIcons name="smart-toy" size={32} color="#2F5D50" />
+              <Text style={styles.cardTitle}>AI Assistant</Text>
+              <Text style={styles.cardText}>Talk to support AI</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* BOOK SESSION BUTTON */}
+          <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+            <TouchableOpacity
+              onPress={() => router.push("/user/booking")}
+              onPressIn={pressIn}
+              onPressOut={pressOut}
+            >
+              <MaterialIcons name="add-circle-outline" size={32} color="#2F5D50" />
+              <Text style={styles.cardTitle}>Book Session</Text>
+              <Text style={styles.cardText}>Schedule a new session</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+        </View>
+
+        {/* MOOD TRACKER */}
+        <Text style={styles.sectionTitle}>How are you feeling today?</Text>
+        <View style={styles.moodRow}>
+          <TouchableOpacity onPress={() => handleMoodPress("happy")}>
+            <Animated.Text
+              style={[
+                styles.moodEmoji,
+                selectedMood === "happy" && styles.moodSelected,
+                { transform: [{ scale: selectedMood === "happy" ? moodScale : 1 }] }
+              ]}
+            >😊</Animated.Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => handleMoodPress("okay")}>
+            <Animated.Text
+              style={[
+                styles.moodEmoji,
+                selectedMood === "okay" && styles.moodSelected,
+                { transform: [{ scale: selectedMood === "okay" ? moodScale : 1 }] }
+              ]}
+            >😐</Animated.Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => handleMoodPress("sad")}>
+            <Animated.Text
+              style={[
+                styles.moodEmoji,
+                selectedMood === "sad" && styles.moodSelected,
+                { transform: [{ scale: selectedMood === "sad" ? moodScale : 1 }] }
+              ]}
+            >😔</Animated.Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => handleMoodPress("angry")}>
+            <Animated.Text
+              style={[
+                styles.moodEmoji,
+                selectedMood === "angry" && styles.moodSelected,
+                { transform: [{ scale: selectedMood === "angry" ? moodScale : 1 }] }
+              ]}
+            >😡</Animated.Text>
+          </TouchableOpacity>
+        </View>
+
+        {selectedMood === "happy" && (
+          <Text style={styles.moodMessage}>Great! Keep the positive energy today 🌿</Text>
+        )}
+        {selectedMood === "okay" && (
+          <Text style={styles.moodMessage}>Thanks for checking in. Take it one step at a time.</Text>
+        )}
+        {selectedMood === "sad" && (
+          <Text style={styles.moodMessage}>It’s okay to feel this way. Consider talking to someone 💙</Text>
+        )}
+        {selectedMood === "angry" && (
+          <Text style={styles.moodMessage}>Take a deep breath. Lets slow things down.</Text>
+        )}
+
+        {/* UPCOMING SESSION */}
+        <Text style={styles.sectionTitle}>Upcoming Session</Text>
+        <View style={styles.upcomingCard}>
+          <Text style={styles.sessionTitle}>Cognitive Therapy</Text>
+          <Text style={styles.sessionInfo}>📅 10 March 2026</Text>
+          <Text style={styles.sessionInfo}>⏰ 14:00 - 15:00</Text>
+          <Text style={styles.sessionInfo}>👨‍⚕️ Dr. Smith</Text>
+        </View>
+
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
-// ----- PLACEHOLDER SCREENS -----
-function MyBookingsScreen() { return <View style={styles.screenCenter}><Text>My Bookings Screen</Text></View>; }
-function CalendarScreen() { return <View style={styles.screenCenter}><Text>Calendar Screen</Text></View>; }
-function MessagingScreen() { return <View style={styles.screenCenter}><Text>Messaging Screen</Text></View>; }
-
-// ----- CUSTOM DRAWER -----
+// --- CUSTOM DRAWER ---
 function CustomDrawerContent(props) {
   return (
-    <DrawerContentScrollView {...props} style={{ backgroundColor: "#002324" }}>
-      <DrawerItem label="Dashboard" labelStyle={{ color: "#EBFACF" }} onPress={() => props.navigation.navigate("Dashboard")} />
-      <DrawerItem label="My Bookings" labelStyle={{ color: "#EBFACF" }} onPress={() => props.navigation.navigate("MyBookings")} />
-      <DrawerItem label="Calendar" labelStyle={{ color: "#EBFACF" }} onPress={() => props.navigation.navigate("Calendar")} />
-      <DrawerItem label="Messaging" labelStyle={{ color: "#EBFACF" }} onPress={() => props.navigation.navigate("Messaging")} />
+    <DrawerContentScrollView {...props} style={styles.drawer}>
+      <DrawerItem
+        label="Dashboard"
+        labelStyle={styles.drawerLabel}
+        onPress={() => props.navigation.navigate("Dashboard")}
+      />
+      <DrawerItem
+        label="My Bookings"
+        labelStyle={styles.drawerLabel}
+        onPress={() => props.navigation.navigate("MyBookings")}
+      />
+      <DrawerItem
+        label="Calendar"
+        labelStyle={styles.drawerLabel}
+        onPress={() => props.navigation.navigate("Calendar")}
+      />
+      <DrawerItem
+        label="Messaging"
+        labelStyle={styles.drawerLabel}
+        onPress={() => props.navigation.navigate("Messaging")}
+      />
     </DrawerContentScrollView>
   );
 }
 
+// --- DRAWER NAVIGATOR ---
 const Drawer = createDrawerNavigator();
 
 export default function UserDrawerNavigator() {
@@ -121,57 +246,45 @@ export default function UserDrawerNavigator() {
   );
 }
 
-// ----- STYLES -----
+// --- STYLES ---
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FDFDFD", paddingHorizontal: 16 },
+  background: { flex: 1 },
+  container: { padding: 20 },
   navBar: { height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  navTitle: { fontSize: 20, fontWeight: "bold", color: "#4A4A4A" },
-  navIcons: { flexDirection: "row" },
-  iconButton: { marginLeft: 16 },
-
-  welcomeTitle: { fontSize: 22, fontWeight: "bold", color: "#4A4A4A", marginTop: 16 },
-  welcomeSubtitle: { fontSize: 14, color: "#7C7C7C", marginBottom: 16 },
-
-  horizontalScroll: { marginBottom: 20 },
-  cardWrapper: { marginRight: 14, width: width * 0.65 },
+  navTitle: { fontSize: 20, fontWeight: "700", color: "#002324" },
+  navIcons: { flexDirection: "row", gap: 15 },
+  welcomeTitle: { fontSize: 26, fontWeight: "700", marginTop: 20, color: "#002324" },
+  subtitle: { color: "#3D5A57", marginBottom: 30 },
+  cardsWrapper: { gap: 15 },
   card: {
+    backgroundColor: "rgba(255,255,255,0.92)",
+    padding: 22,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 5
+  },
+  cardTitle: { fontSize: 18, fontWeight: "600", marginTop: 10, color: "#002324" },
+  cardText: { color: "#5E6F6C", fontSize: 13 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginTop: 30, marginBottom: 10, color: "#002324" },
+  upcomingCard: {
+    backgroundColor: "rgba(255,255,255,0.92)",
     padding: 20,
     borderRadius: 20,
     shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-  cardLogo: {
-    position: "absolute",
-    top: -15,
-    right: -15,
-    width: 120,
-    height: 120,
-    opacity: 0.08,
-    resizeMode: "contain",
-  },
-  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#000", marginBottom: 4 },
-  cardSubtitle: { fontSize: 14, color: "#333" },
-
-  cardBg1: { backgroundColor: "#A8E6CF" },
-  cardBg2: { backgroundColor: "#FFD3B6" },
-  cardBg3: { backgroundColor: "#FFAAA5" },
-
-  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#4A4A4A", marginBottom: 10 },
-  upcomingCard: {
-    backgroundColor: "#E0F7FA",
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.15,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
-    marginBottom: 20,
+    elevation: 5
   },
-  bookingTitle: { fontSize: 16, fontWeight: "bold", color: "#4A4A4A", marginBottom: 4 },
-  bookingDetail: { fontSize: 12, color: "#555", marginBottom: 2 },
-  screenCenter: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FDFDFD" },
+  sessionTitle: { fontSize: 16, fontWeight: "600", marginBottom: 5 },
+  sessionInfo: { color: "#4E5E5B" },
+  moodRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 10 },
+  moodEmoji: { fontSize: 32 },
+  moodSelected: { backgroundColor: "#EBFACF", borderRadius: 50, padding: 6 },
+  moodMessage: { marginTop: 10, textAlign: "center", color: "#002324", fontWeight: "500" },
+  drawer: { backgroundColor: "#002324" },
+  drawerLabel: { color: "#EBFACF" }
 });
