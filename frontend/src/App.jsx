@@ -17,13 +17,14 @@ import UserDashboard from './Pages/users/UserDashboard';
 import MyAppointments from './Pages/users/MyAppointments';
 import Calendar from './Pages/users/Calendar';
 import Messages from './Pages/users/Messages';
+import AdminDashboard from './Pages/AdminDashboard';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // Fixed to client role only
-  const user = { role: "client" };
+const user = JSON.parse(localStorage.getItem("user"));
+
 
   // Show navbar on ALL pages
   const showNavbar = true;
@@ -44,10 +45,11 @@ function AppLayout() {
         <>
           <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
           <Sidebar
-            userRole={user.role}
+            userRole={user?.role}
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
           />
+
         </>
       )}
 
@@ -57,18 +59,30 @@ function AppLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/booking-history" element={<BookingHistory />} />
           <Route path="/total-sessions" element={<TotalSessions />} />
           <Route path="/upcoming-sessions" element={<UpcomingSessions />} />
           
           {/* Client routes only - these match your sidebar menu */}
-          <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/appointments" element={<MyAppointments />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/ai-chatbot" element={<div>AI Chatbot (Coming Soon)</div>} />
+          <Route
+              path="/admin"
+              element={user?.role === "SUPERUSER" ? <AdminDashboard /> : <Home />}
+            />
+            <Route
+              path="/therapist/dashboard"
+              element={user?.role === "THERAPIST" ? <TherapistDashboard /> : <Home />}
+            />
+
+            <Route
+              path="/dashboard"
+              element={user?.role === "CLIENT" ? <UserDashboard /> : <Home />}
+            />
+
         </Routes>
       </main>
     </>

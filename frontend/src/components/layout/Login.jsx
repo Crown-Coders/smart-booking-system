@@ -1,7 +1,5 @@
-// src/components/layout/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -28,11 +26,21 @@ function Login() {
 
       // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
-      if (data.user && data.user.isSuperUser) {
-        navigate("/admin-dashboard"); // redirect admin
-      } else {
-        navigate("/dashboard"); // redirect regular user
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+
+      // Redirect based on role
+      if (data.user.role === "SUPERUSER" || data.user.role === "ADMIN") {
+        navigate("/admin");
+      } 
+      else if (data.user.role === "THERAPIST") {
+        navigate("/therapist/dashboard");
+      } 
+      else {
+        navigate("/dashboard");
       }
+
+
     } catch (err) {
       setError(err.message);
     }
