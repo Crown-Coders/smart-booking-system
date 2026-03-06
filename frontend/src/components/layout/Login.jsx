@@ -29,8 +29,10 @@ function Login({ onLoginSuccess }) {
       // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
       
-  // ✅ Notify AppLayout that user is authenticated
-      onLoginSuccess();
+  // ✅ Notify AppLayout that user is authenticated (Safety Check added!)
+      if (typeof onLoginSuccess === 'function') {
+        onLoginSuccess();
+      }
       // ✅ Redirect to dashboard
       navigate("/dashboard");
     } catch (err) {

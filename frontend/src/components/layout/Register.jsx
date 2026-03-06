@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo-mental.com.png";
 
-function Register() {
+function Register({ onRegisterSuccess }) {
   const [form, setForm] = useState({
     name: "",
     surname: "",
@@ -47,123 +47,133 @@ function Register() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Registration failed");
 
+      if (typeof onRegisterSuccess === 'function') {
+        onRegisterSuccess();
+      }
+
       navigate("/login");
     } catch (err) {
       setError(err.message);
     }
   };
 
+  // ✅ Created a shared style object so all inputs match Login.jsx perfectly
+  const inputStyle = { 
+    padding: "0.6rem 0.75rem", 
+    fontSize: "1rem",
+    backgroundColor: "white" 
+  };
+
   return (
-    <div className="login-fullscreen">
-      <div className="login-card-wrapper" style={{ maxWidth: "500px" }}> 
-        <div className="login-card" style={{ padding: "2.5rem 2rem" }}>
-           <img src={logo} alt="Mental.com Logo" className="navbar-logo" />
-           
-          <h2>Create Account</h2>
-          <p className="login-subtitle">Sign up to get started</p>
+    // ✅ Removed the outer .login-fullscreen wrapper!
+    <div className="login-card-wrapper" style={{ maxWidth: "550px" }}> 
+      <div className="login-card">
+        
+        {/* ✅ Matched the logo class to Login.jsx */}
+        <img src={logo} alt="Mental.com Logo" className="navbar-logo" />
+        <h2>Create Account</h2>
+        <p className="login-subtitle">Sign up to get started</p>
 
-          <form onSubmit={handleSubmit}>
-            {/* Name */}
-            <div className="mb-3"> 
-              <label className="input-group">Name</label>
-              <input
-                type="text"
-                name="name"
-                placeholder="First Name"
-                value={form.name}
-                onChange={handleChange}
-                className="form-control" 
-                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
-                required
-              />
-            </div>
-            
-            {/* Surname - Now below Name */}
-            <div className="mb-3">
-              <label className="input-group">Surname</label>
-              <input
-                type="text"
-                name="surname"
-                placeholder="Last Name"
-                value={form.surname}
-                onChange={handleChange}
-                className="form-control" 
-                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }}
-                required
-              />
-            </div>
-            {/* ID Number */}
-            <div className="mb-3">
-            <label className="input-group">ID Number</label>
+        <form onSubmit={handleSubmit}>
+          
+          <div className="input-group" style={{ marginBottom: "1.5rem" }}> 
+            <label>Name</label>
             <input
-                type="text"
-                name="idNumber"
-                placeholder="Enter your ID Number"
-                value={form.idNumber}
-                onChange={handleChange}
-                className="form-control"
-                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }}
-                required
+              type="text"
+              name="name"
+              placeholder="First Name"
+              value={form.name}
+              onChange={handleChange}
+              style={inputStyle}
+              required
             />
-            </div>
+          </div>
+          
+          <div className="input-group" style={{ marginBottom: "1.5rem" }}>
+            <label>Surname</label>
+            <input
+              type="text"
+              name="surname"
+              placeholder="Last Name"
+              value={form.surname}
+              onChange={handleChange}
+              style={inputStyle}
+              required
+            />
+          </div>
 
+          <div className="input-group" style={{ marginBottom: "1.5rem" }}>
+            <label>ID Number</label>
+            <input
+              type="text"
+              name="idNumber"
+              placeholder="Enter your ID Number"
+              value={form.idNumber}
+              onChange={handleChange}
+              style={inputStyle}
+              required
+            />
+          </div>
 
-            {/* Email */}
-            <div className="mb-3">
-              <label className="input-group">Email</label>
+          <div className="input-group" style={{ marginBottom: "1.5rem" }}>
+            <label>Email</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange}
+              style={inputStyle}
+              required
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
+            <div className="input-group" style={{ marginBottom: 0, flex: 1 }}>
+              <label>Password</label>
               <input
-                type="email"
-                name="email"
-                placeholder="you@example.com"
-                value={form.email}
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={form.password}
                 onChange={handleChange}
-                className="form-control" 
-                style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
+                style={inputStyle}
                 required
               />
             </div>
-
-            {/* Password + Confirm - Keeping these side by side as requested */}
-            <div className="row g-2 mb-3">
-              <div className="col">
-                <label className="input-group">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="form-control" 
-                  style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
-                  required
-                />
-              </div>
-              <div className="col">
-                <label className="input-group">Confirm</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm Password"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  className="form-control" 
-                  style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }} 
-                  required
-                />
-              </div>
+            <div className="input-group" style={{ marginBottom: 0, flex: 1 }}>
+              <label>Confirm</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                style={inputStyle}
+                required
+              />
             </div>
+          </div>
 
-            {error && <div className="error-message">{error}</div>}
+          {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" className="btn btn-dark w-100" style={{ padding: "0.6rem 0.75rem", fontSize: "1rem" }}> 
-              Sign Up
-            </button>
-          </form>
+          <button 
+            type="submit" 
+            style={{ 
+              padding: "0.6rem 0.75rem", 
+              fontSize: "1rem",
+              width: "100%",
+              marginTop: "0.5rem" 
+            }}
+          > 
+            Sign Up
+          </button>
+        </form>
 
-          <p className="signup-link mt-3">
-            Already have an account? <Link to="/login">Login</Link>
-          </p>
-        </div>
+        <p className="signup-link">
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
+        
       </div>
     </div>
   );
