@@ -498,3 +498,74 @@ body {
     margin-bottom: 2rem;
   }
 }
+
+
+/* -------------------- AI chatbot Styles -------------------- */
+.chatbot-container{
+ position: fixed;
+ bottom: 20px;
+ right: 20px;
+ width: 320px;
+ height: 420px;
+ background: white;
+ border-radius: 12px;
+ box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+ display: flex;
+ flex-direction: column;
+ z-index: 9999;
+}
+
+.chat-header{
+ background: #002324;
+ color: white;
+ padding: 10px;
+ font-weight: bold;
+ text-align: center;
+ border-top-left-radius: 12px;
+ border-top-right-radius: 12px;
+}
+
+.chat-messages{
+ flex: 1;
+ padding: 10px;
+ overflow-y: auto;
+ display: flex;
+ flex-direction: column;
+ gap: 8px;
+}
+
+.user-message{
+ background: #EBFACF;
+ padding: 8px 10px;
+ border-radius: 8px;
+ align-self: flex-end;
+ max-width: 80%;
+}
+
+.bot-message{
+ background: #E5DDDE;
+ padding: 8px 10px;
+ border-radius: 8px;
+ align-self: flex-start;
+ max-width: 80%;
+}
+
+.chat-input{
+ display: flex;
+ border-top: 1px solid #ddd;
+}
+
+.chat-input input{
+ flex:1;
+ border:none;
+ padding:10px;
+ outline:none;
+}
+
+.chat-input button{
+ background:#002324;
+ color:white;
+ border:none;
+ padding:10px 15px;
+ cursor:pointer;
+}
