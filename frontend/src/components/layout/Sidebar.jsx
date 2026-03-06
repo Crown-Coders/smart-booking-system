@@ -88,6 +88,7 @@ const MENU_BY_ROLE = {
     { name: "Booking History", path: "/booking-history" },
     { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
+
   client: [
     { name: "Dashboard", path: "/dashboard" },
     { name: "My Appointments", path: "/appointments" },
@@ -95,7 +96,8 @@ const MENU_BY_ROLE = {
     { name: "Messages", path: "/messages" },
     { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
-  admin: [
+
+  superuser: [
     { name: "Dashboard", path: "/admin" },
     { name: "Users", path: "/admin/users" },
     { name: "Therapists", path: "/admin/therapists" },
@@ -105,7 +107,9 @@ const MENU_BY_ROLE = {
   ],
 };
 
+
 function Sidebar({ userRole, isOpen, onClose }) {
+  console.log("User Role:", userRole);
   const [hovered, setHovered] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
@@ -118,7 +122,10 @@ function Sidebar({ userRole, isOpen, onClose }) {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
-  const menuItems = MENU_BY_ROLE[userRole] ?? [];
+  console.log("User Role:", userRole);
+
+ const menuItems = MENU_BY_ROLE[userRole?.toLowerCase()] ?? [];
+
 
   const sidebarStyle = {
     ...sidebarBase,
@@ -174,6 +181,7 @@ function Sidebar({ userRole, isOpen, onClose }) {
               {item.name}
               {item.disabled && <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: COLORS.accent }}>(coming soon)</span>}
             </li>
+
           );
         })}
       </ul>

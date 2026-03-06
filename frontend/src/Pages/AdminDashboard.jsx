@@ -15,63 +15,7 @@ const styles = {
     fontFamily: 'system-ui, Avenir, Helvetica, Arial, sans-serif',
     color: colors.deepTeal,
   },
-  sidebar: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '240px',
-    height: '100vh',
-    backgroundColor: colors.deepTeal,
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '0',
-    zIndex: 100,
-    boxShadow: '4px 0 24px rgba(0,35,36,0.15)',
-  },
-  sidebarLogo: {
-    padding: '2rem 1.5rem 1.5rem',
-    borderBottom: `1px solid rgba(161,173,149,0.2)`,
-  },
-  logoText: {
-    fontSize: '1.6rem',
-    fontWeight: '700',
-    color: colors.mint,
-    letterSpacing: '-0.02em',
-    lineHeight: 1.1,
-  },
-  logoSub: {
-    fontSize: '0.7rem',
-    color: colors.sage,
-    letterSpacing: '0.15em',
-    textTransform: 'uppercase',
-    marginTop: '4px',
-  },
-  sidebarNav: {
-    flex: 1,
-    padding: '1.5rem 0',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  navItem: (active) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '0.75rem 1.5rem',
-    cursor: 'pointer',
-    borderRadius: '0',
-    fontSize: '0.9rem',
-    fontWeight: active ? '600' : '400',
-    color: active ? colors.mint : colors.sage,
-    backgroundColor: active ? 'rgba(235,250,207,0.1)' : 'transparent',
-    borderLeft: active ? `3px solid ${colors.mint}` : '3px solid transparent',
-    transition: 'all 0.2s ease',
-    letterSpacing: '0.02em',
-  }),
-  sidebarFooter: {
-    padding: '1.5rem',
-    borderTop: `1px solid rgba(161,173,149,0.2)`,
-  },
+
   userBlock: {
     display: 'flex',
     alignItems: 'center',
@@ -114,10 +58,8 @@ const styles = {
     transition: 'all 0.2s',
   },
 main: {
-  marginLeft: '240px',   // keep sidebar offset
   padding: '0',
   minHeight: '100vh',
-  marginTop: '60px',     // push content below navbar
 },
 
   topbar: {

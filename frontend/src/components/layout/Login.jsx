@@ -1,9 +1,8 @@
-// src/components/layout/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo-mental.com.png";
 
-function Login({ onLoginSuccess }) {
+function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,13 +27,21 @@ function Login({ onLoginSuccess }) {
 
       // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
-      
-  // ✅ Notify AppLayout that user is authenticated (Safety Check added!)
-      if (typeof onLoginSuccess === 'function') {
-        onLoginSuccess();
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+
+      // Redirect based on role
+      if (data.user.role === "SUPERUSER" || data.user.role === "ADMIN") {
+        navigate("/admin");
+      } 
+      else if (data.user.role === "THERAPIST") {
+        navigate("/therapist/dashboard");
+      } 
+      else {
+        navigate("/dashboard");
       }
-      // ✅ Redirect to dashboard
-      navigate("/dashboard");
+
+
     } catch (err) {
       setError(err.message);
     }
