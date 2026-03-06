@@ -27,10 +27,22 @@ import Calendar from './Pages/users/Calendar';
 import Messages from './Pages/users/Messages';
 import AdminDashboard from './Pages/AdminDashboard';
 
-// Helper to detect client dashboard routes
-const isClientRoute = (pathname) => {
-  const clientPaths = ['/dashboard', '/appointments', '/calendar', '/messages', '/ai-chatbot'];
-  return clientPaths.some(path => pathname.startsWith(path));
+// Helper to detect dashboard routes for showing sidebar
+const isDashboardRoute = (pathname) => {
+  const dashboardPaths = [
+    '/dashboard',
+    '/appointments',
+    '/calendar',
+    '/messages',
+    '/ai-chatbot',
+    '/admin',
+    '/therapist',
+    '/profile',
+    '/booking-history',
+    '/total-sessions',
+    '/upcoming-sessions'
+  ];
+  return dashboardPaths.some(path => pathname.startsWith(path));
 };
 
 function AppLayout() {
@@ -40,12 +52,11 @@ function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user"));
 
-
-  // Show navbar on ALL pages
+  // Show navbar on all pages
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
-  const showSidebar = !isAuthPage && isClientRoute(location.pathname);
+  const showSidebar = !isAuthPage && isDashboardRoute(location.pathname);
 
   // Check screen width on mount and resize
   useEffect(() => {
@@ -65,6 +76,7 @@ const user = JSON.parse(localStorage.getItem("user"));
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setIsAuthenticated(false);
     navigate('/');
   };
@@ -83,26 +95,13 @@ const user = JSON.parse(localStorage.getItem("user"));
         isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
       />
-      
+
       {showSidebar && (
         <Sidebar
-          userRole={user.role}
+          userRole={user?.role}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-      )}
-      
-      {/* Only show sidebar on non-auth pages */}
-      {!isAuthPage && (
-        <>
-          <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-          <Sidebar
-            userRole={user?.role}
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
-
-        </>
       )}
 
       <main 
@@ -114,14 +113,14 @@ const user = JSON.parse(localStorage.getItem("user"));
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
           <Route path="/register" element={<Register onRegisterSuccess={handleLoginSuccess} />} />
-          
+
           {/* Therapist routes */}
           <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/booking-history" element={<BookingHistory />} />
           <Route path="/total-sessions" element={<TotalSessions />} />
           <Route path="/upcoming-sessions" element={<UpcomingSessions />} />
-          
+
           {/* Client routes only */}
           <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/appointments" element={<MyAppointments />} />
