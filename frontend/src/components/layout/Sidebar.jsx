@@ -73,12 +73,6 @@ const hoverStyle = {
   fontWeight: 600,
 };
 
-const activeStyle = {
-  backgroundColor: COLORS.hover,
-  color: COLORS.background,
-  fontWeight: 700,
-};
-
 const disabledStyle = {
   opacity: 0.5,
   cursor: "not-allowed",
@@ -92,8 +86,7 @@ const MENU_BY_ROLE = {
     { name: "Total Sessions", path: "/total-sessions" },
     { name: "Upcoming Sessions", path: "/upcoming-sessions" },
     { name: "Booking History", path: "/booking-history" },
-    { name: "AI Chatbot", disabled: true },
-/*  ROLE → MENU MAP - UPDATED with paths */
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
   client: [
     { name: "Dashboard", path: "/dashboard" },
@@ -132,11 +125,10 @@ function Sidebar({ userRole, isOpen, onClose }) {
     transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
   };
 
-  // ADDED: Function to handle navigation
   const handleNavigation = (item) => {
     if (!item.disabled && item.path) {
       navigate(item.path);
-      if (isMobile) onClose(); // Close sidebar on mobile after navigation
+      if (isMobile) onClose();
     }
   };
 
@@ -172,20 +164,13 @@ function Sidebar({ userRole, isOpen, onClose }) {
               style={{
                 ...navItemStyle,
                 ...(hovered === index ? hoverStyle : {}),
-                ...(isActive ? hoverStyle : {}), // Use hover style for active state (matches original design)
+                ...(isActive ? hoverStyle : {}), 
                 ...(item.disabled ? disabledStyle : {}),
               }}
               onMouseEnter={() => setHovered(index)}
               onMouseLeave={() => setHovered(null)}
-              onClick={() => {
-                if (!item.disabled && item.path) {
-                  navigate(item.path);
-                  if (isMobile) onClose();
-                }
-              }}
+              onClick={() => handleNavigation(item)} /* FIX: onClick is now properly an HTML attribute! */
             >
-              {item.name}
-              onClick={() => handleNavigation(item)} // UPDATED: use navigation function
               {item.name}
               {item.disabled && <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: COLORS.accent }}>(coming soon)</span>}
             </li>
