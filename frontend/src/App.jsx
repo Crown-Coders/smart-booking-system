@@ -111,7 +111,7 @@ const user = JSON.parse(localStorage.getItem("user"));
       >
         <Routes>
           {/* Public routes */}
-<Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
           <Route path="/register" element={<Register onRegisterSuccess={handleLoginSuccess} />} />
           
@@ -130,16 +130,16 @@ const user = JSON.parse(localStorage.getItem("user"));
           <Route path="/ai-chatbot" element={<div>AI Chatbot (Coming Soon)</div>} />
           <Route
               path="/admin"
-              element={user?.role === "SUPERUSER" ? <AdminDashboard /> : <Home />}
+              element={user?.role === "SUPERUSER" ? <AdminDashboard /> : <LandingPage />}
             />
             <Route
               path="/therapist/dashboard"
-              element={user?.role === "THERAPIST" ? <TherapistDashboard /> : <Home />}
+              element={user?.role === "THERAPIST" ? <TherapistDashboard /> : <LandingPage />}
             />
 
             <Route
               path="/dashboard"
-              element={user?.role === "CLIENT" ? <UserDashboard /> : <Home />}
+              element={user?.role === "CLIENT" ? <UserDashboard /> : <LandingPage />}
             />
 
         </Routes>
