@@ -1,8 +1,8 @@
-// src/components/layout/Navbar.jsx
 import React from 'react';
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import logo from "../../assets/images/logo-mental.com.png";
 
-function Navbar() {
+function Navbar({ showSidebarToggle, onToggleSidebar, isAuthenticated, onLogout }) {
   return (
     <>
       <style>{`
@@ -28,7 +28,11 @@ function Navbar() {
           text-decoration: none;
           letter-spacing: 0.5px;
         }
-
+        .navbar-logo {
+          height:60px;
+          border-radius: 8px;
+          object-fit: contain;
+        }
         .navbar-brand:hover {
           color: #A1AD95;
         }
@@ -58,9 +62,39 @@ function Navbar() {
           font-weight: 600;
         }
 
+        .logout-btn {
+          background: transparent;
+          border: 1px solid #E5DDDE;
+          color: #E5DDDE;
+          padding: 0.4rem 1rem;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+          background-color: #A1AD95;
+          color: #002324;
+          border-color: #A1AD95;
+        }
+
+        .hamburger {
+          background: none;
+          border: none;
+          color: #EBFACF;
+          font-size: 1.8rem;
+          cursor: pointer;
+          display: none;
+          margin-right: 1rem;
+        }
+
         @media (max-width: 768px) {
           .navbar {
             padding: 0 1rem;
+          }
+          .hamburger {
+            display: block;
           }
           .nav-links {
             gap: 0.5rem;
@@ -76,11 +110,31 @@ function Navbar() {
       `}</style>
 
       <nav className="navbar">
-        <Link to="/" className="navbar-brand">Smart Booking</Link>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {showSidebarToggle && (
+            <button className="hamburger" onClick={onToggleSidebar}>
+              ☰
+            </button>
+          )}
+          <NavLink to="/" className="navbar-brand">
+            <img src={logo} alt="Mental.com Logo" className="navbar-logo" />
+          </NavLink>
+        </div>
+
         <div className="nav-links">
-          <Link to="/home" className="nav-link active">Home</Link>
-          <Link to="/services" className="nav-link">Services</Link>
-          <Link to="/login" className="nav-link">Login</Link>
+          <NavLink to="/" className="nav-link" end>Home</NavLink>
+
+          {isAuthenticated ? (
+            <>
+              <NavLink to="/dashboard" className="nav-link">Dashboard</NavLink>
+              <button onClick={onLogout} className="logout-btn">Logout</button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/register" className="nav-link">Sign Up</NavLink>
+              <NavLink to="/login" className="nav-link">Login</NavLink>
+            </>
+          )}
         </div>
       </nav>
     </>
