@@ -1,9 +1,11 @@
-// src/Pages/users/UserDashboard.jsx
+import { Modal } from "react-bootstrap";
 import React, { useState, useEffect } from 'react';  // Add this line
 
 function UserDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {

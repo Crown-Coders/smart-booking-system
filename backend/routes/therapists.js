@@ -1,16 +1,17 @@
+// routes/therapists.js - REVERT TO ORIGINAL WORKING VERSION
 const express = require('express');
 const router = express.Router();
-const db = require('../models'); // your Sequelize models
-const { TherapistProfile, User } = db;
+const { TherapistProfile, User } = require("../models");
 const bcrypt = require('bcrypt');
 
-
-// GET all therapists
-// GET all therapists
+// GET all therapists - using manual fetching (NO include)
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching all therapists...');
+    
     // Fetch all therapist profiles
     const therapistProfiles = await TherapistProfile.findAll();
+    console.log(`Found ${therapistProfiles.length} therapist profiles`);
 
     // For each profile, fetch the corresponding user manually
     const therapists = await Promise.all(
@@ -20,22 +21,35 @@ router.get('/', async (req, res) => {
         });
 
         return {
-          ...profile.toJSON(),
-          user: user ? user.toJSON() : null
+          id: profile.id,
+          specialization: profile.specialization,
+          yearsOfExperience: profile.yearsOfExperience,
+          licenseNumber: profile.licenseNumber,
+          typeOfPractice: profile.typeOfPractice,
+          bio: profile.bio,
+          image: profile.image,
+          createdAt: profile.createdAt,
+          updatedAt: profile.updatedAt,
+          user: user ? {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            idNumber: user.idNumber,
+            role: user.role
+          } : null
         };
       })
     );
 
+    console.log('Sending therapists data');
     res.json(therapists);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error in GET /api/therapists:', err);
+    res.status(500).json({ error: 'Failed to fetch therapists' });
   }
 });
 
-
 // POST add a new therapist
-// POST add a new therapist with hardcoded ID number
 router.post('/', async (req, res) => {
   try {
     const {
@@ -84,9 +98,16 @@ router.post('/', async (req, res) => {
       image: image || null
     });
 
-    // ✅ Manually attach the user to the profile
     const fullProfile = {
-      ...therapistProfile.toJSON(),
+      id: therapistProfile.id,
+      specialization: therapistProfile.specialization,
+      yearsOfExperience: therapistProfile.yearsOfExperience,
+      licenseNumber: therapistProfile.licenseNumber,
+      typeOfPractice: therapistProfile.typeOfPractice,
+      bio: therapistProfile.bio,
+      image: therapistProfile.image,
+      createdAt: therapistProfile.createdAt,
+      updatedAt: therapistProfile.updatedAt,
       user: {
         id: user.id,
         name: user.name,
@@ -105,8 +126,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to create therapist' });
   }
 });
-
-
 
 // DELETE a therapist
 router.delete('/:id', async (req, res) => {
