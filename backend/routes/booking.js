@@ -1,69 +1,67 @@
 // routes/booking.js
 const express = require("express");
 const router = express.Router();
-const { Booking } = require("../models");
+const { Booking, Payment } = require("../models");
+
+// Helper function
+const calculatePrice = (startTime, endTime) => {
+  const start = new Date(`1970-01-01T${startTime}`);
+  const end = new Date(`1970-01-01T${endTime}`);
+  const diffMs = end - start;
+  const hours = diffMs / (1000 * 60 * 60);
+  const pricePerHour = 800;
+  return hours * pricePerHour;
+};
 
 // Create booking
 router.post("/", async (req, res) => {
   try {
-    const { userId, therapistId, slotId, description } = req.body;
+    const { userId, therapistId, bookingDate, startTime, endTime, description } = req.body;
 
-    console.log('Received booking request:', { userId, therapistId, slotId, description });
-
-    // Validate required fields
-    if (!userId || !therapistId || !slotId) {
-      return res.status(400).json({ error: "Missing required fields: userId, therapistId and slotId are required" });
+    if (!userId || !therapistId || !startTime || !endTime) {
+      return res.status(400).json({ error: "Missing required booking fields" });
     }
 
-    // Check if this slot is already booked for this therapist
-    const existingBooking = await Booking.findOne({
-      where: { 
-        therapistId: therapistId,
-        availabilitySlotId: slotId,
-        status: 'CONFIRMED'
-      }
-    });
+    const price = calculatePrice(startTime, endTime);
 
-    if (existingBooking) {
-      return res.status(400).json({ error: "This time slot is already booked. Please select another slot." });
-    }
-
-    // Create booking
     const booking = await Booking.create({
       clientId: userId,
-      therapistId: therapistId,
-      availabilitySlotId: slotId,
+      therapistId,
+      bookingDate,
+      startTime,
+      endTime,
       notes: description,
-      status: 'CONFIRMED'
+      status: "PENDING",
     });
 
-    console.log('Booking created:', booking.toJSON());
-    res.status(201).json(booking);
+    await Payment.create({
+      amount: price,
+      currency: "ZAR",
+      status: "PENDING",
+      transactionReference: `BOOK-${booking.id}`,
+      paymentMethod: "CARD",
+    });
+
+    res.status(201).json({ booking, amount: price });
   } catch (error) {
-    console.error('Error creating booking:', error);
-    res.status(500).json({ error: "Booking failed: " + error.message });
+    console.error(error);
+    res.status(500).json({ error: "Booking failed" });
   }
 });
 
-// Get available slots for a therapist (returns IDs of booked slots)
+// Get available slots
 router.get("/available/:therapistId", async (req, res) => {
   try {
     const { therapistId } = req.params;
-    
-    // Find all booked slots for this therapist
     const bookedSlots = await Booking.findAll({
-      where: { 
-        therapistId: therapistId,
-        status: 'CONFIRMED'
-      },
-      attributes: ['availabilitySlotId']
+      where: { therapistId, status: "CONFIRMED" },
+      attributes: ["availabilitySlotId"],
     });
 
-    const bookedSlotIds = bookedSlots.map(booking => booking.availabilitySlotId);
-    
+    const bookedSlotIds = bookedSlots.map(b => b.availabilitySlotId);
     res.json({ bookedSlotIds });
   } catch (error) {
-    console.error('Error fetching available slots:', error);
+    console.error(error);
     res.status(500).json({ error: "Failed to fetch available slots" });
   }
 });
@@ -72,16 +70,28 @@ router.get("/available/:therapistId", async (req, res) => {
 router.get("/user/:userId", async (req, res) => {
   try {
     const bookings = await Booking.findAll({
-      where: { 
-        clientId: req.params.userId,
-        status: 'CONFIRMED'
-      },
-      order: [['createdAt', 'DESC']]
+      where: { clientId: req.params.userId, status: "CONFIRMED" },
+      order: [["createdAt", "DESC"]],
     });
     res.json(bookings);
   } catch (error) {
-    console.error('Error fetching user bookings:', error);
+    console.error(error);
     res.status(500).json({ error: "Failed to fetch bookings" });
+  }
+});
+
+// Payment success
+router.post("/payment-success/:bookingId", async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.bookingId);
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+    booking.status = "CONFIRMED";
+    await booking.save();
+    res.json({ message: "Booking confirmed after payment" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Payment confirmation failed" });
   }
 });
 
