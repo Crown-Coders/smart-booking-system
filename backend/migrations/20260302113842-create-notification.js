@@ -15,11 +15,11 @@ module.exports = {
       bookingId: {
         type: Sequelize.INTEGER
       },
-type: {
-  type:  DataTypes.ENUM('GENERAL', 'BOOKING', 'PAYMENT'),
-  defaultValue: 'GENERAL'
-},
-
+      type: {
+        type: Sequelize.STRING,      // ✅ STRING instead of ENUM
+        allowNull: false,
+        defaultValue: 'GENERAL'
+      },
       message: {
         type: Sequelize.TEXT
       },
