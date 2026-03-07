@@ -33,4 +33,54 @@ router.get("/me", async (req, res) => {
   }
 });
 
+
+// GET all users
+router.get('/', async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching users' });
+  }
+});
+
+// Deactivate user
+router.patch('/:id/deactivate', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.isActive = false;
+    await user.save();
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error deactivating user' });
+  }
+});
+
+// Activate user
+router.patch('/:id/activate', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.isActive = true;
+    await user.save();
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error activating user' });
+  }
+});
+
 module.exports = router;
