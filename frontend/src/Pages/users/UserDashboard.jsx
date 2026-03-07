@@ -1,13 +1,49 @@
-import React, { useState, useEffect } from "react";
-import { Container, Modal } from "react-bootstrap"; // for modals (if you prefer Bootstrap modals)
-import "bootstrap/dist/css/bootstrap.min.css";
+import { Modal } from "react-bootstrap";
+import React, { useState, useEffect } from 'react';  // Add this line
 
 function UserDashboard() {
-  const [userName, setUserName] = useState("John"); // Replace with real user data later
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  // Mock data
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch("http://localhost:5000/api/users/me", {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch user');
+        }
+
+        const data = await response.json();
+        console.log("User data:", data);
+        setUser(data);
+        localStorage.setItem("user", JSON.stringify(data));
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // Rest of your component remains the same...
   const upcomingAppointments = [
     { id: 1, date: "2024-03-15", time: "10:00 AM", therapist: "Dr. Smith", status: "confirmed", notes: "Follow-up session" },
     { id: 2, date: "2024-03-18", time: "2:00 PM", therapist: "Dr. Johnson", status: "pending", notes: "Initial consultation" },
@@ -31,6 +67,11 @@ function UserDashboard() {
     setSelectedAppointment(apt);
     setShowViewModal(true);
   };
+
+  // Add loading check
+  if (loading) {
+    return <div className="dashboard-container">Loading...</div>;
+  }
 
   return (
     <>
@@ -228,12 +269,10 @@ function UserDashboard() {
         }
       `}</style>
 
-      <div className="soft-dashboard">
-        {/* Welcome header */}
-        <div className="welcome-header">
-          <h1>Welcome back, {userName}! 👋</h1>
-          <p>Here's what's happening with your appointments today.</p>
-        </div>
+      <div className="welcome-section">
+        <h1>Welcome back, {user?.name || user?.email || "User"}! 👋</h1>
+        <p>Here's what's happening with your appointments today.</p>
+      </div>
 
         {/* Stats cards */}
         <div className="stats-grid">
@@ -287,7 +326,7 @@ function UserDashboard() {
             </table>
           </div>
         </div>
-      </div>
+      
 
       {/* View Details Modal */}
       <Modal show={showViewModal} onHide={() => setShowViewModal(false)} centered>
