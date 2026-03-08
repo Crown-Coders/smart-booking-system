@@ -111,63 +111,71 @@ function Calendar() {
     return hours * 800;
   };
 
-  const handleBooking = async () => {
-    if (!user) return alert("Please log in to book an appointment");
-    if (!bookingData.therapistId || (!bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)))
-      return alert("Select therapist and time slot");
+const handleBooking = async () => {
+  if (!user) return alert("Please log in to book an appointment");
+  if (!bookingData.therapistId || (!bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)))
+    return alert("Select therapist and time slot");
 
-    // Map slot button selection to start/end times if dropdowns not used
-    if (bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)) {
-      const slot = availableSlots.find((s) => s.id === bookingData.slotId);
-      if (slot) {
-        setBookingData((prev) => ({
-          ...prev,
-          startTime: slot.time,
-          endTime: new Date(new Date(`2000-01-01T${slot.time}`).getTime() + 30 * 60 * 1000)
-            .toTimeString()
-            .slice(0, 5),
-        }));
-      }
+  if (bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)) {
+    const slot = availableSlots.find((s) => s.id === bookingData.slotId);
+    if (slot) {
+      setBookingData((prev) => ({
+        ...prev,
+        startTime: slot.time,
+        endTime: new Date(new Date(`2000-01-01T${slot.time}`).getTime() + 30 * 60 * 1000)
+          .toTimeString()
+          .slice(0, 5),
+      }));
+    }
+  }
+
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    const payload = {
+      userId: user.id,
+      therapistId: bookingData.therapistId,
+      bookingDate: bookingData.date,
+      startTime: bookingData.startTime,
+      endTime: bookingData.endTime,
+      description: bookingData.description,
+      price: calculatePrice(bookingData.startTime, bookingData.endTime),
+    };
+
+    const res = await fetch("http://localhost:5000/api/bookings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Booking failed");
     }
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const payload = {
-        userId: user.id,
-        therapistId: bookingData.therapistId,
-        bookingDate: bookingData.date,
-        startTime: bookingData.startTime,
-        endTime: bookingData.endTime,
-        description: bookingData.description,
-        price: calculatePrice(bookingData.startTime, bookingData.endTime),
-      };
+      const data = await res.json();
 
-      const res = await fetch("http://localhost:5000/api/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const payfastRes = await fetch(
+        `http://localhost:5000/api/bookings/payfast/${data.booking.id}`,
+        { method: "POST" }
+      );
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Booking failed");
-      }
+      const { url } = await payfastRes.json();
 
-      alert("Booking confirmed!");
-      setShowBookingModal(false);
-      resetBookingForm();
-      fetchAvailableSlots(bookingData.therapistId);
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      window.location.href = url;
+      ; // redirect to PayFast sandbox
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const resetBookingForm = () => {
     setBookingData({
