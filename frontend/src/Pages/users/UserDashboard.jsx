@@ -87,24 +87,7 @@ function UserDashboard() {
     setShowBookModal(true);
   };
 
-  // Helper function to convert slotId to time
-  const getTimeFromSlotId = (slotId) => {
-    if (!slotId) return { start: "Unknown", end: "Unknown" };
-    const startHour = 7 + parseInt(slotId);
-    const endHour = startHour + 1;
-    
-    const formatHour = (hour) => {
-      const ampm = hour >= 12 ? "PM" : "AM";
-      const displayHour = hour > 12 ? hour - 12 : hour;
-      return `${displayHour}:00 ${ampm}`;
-    };
-    
-    return {
-      start: formatHour(startHour),
-      end: formatHour(endHour)
-    };
-  };
-
+  // Format date for display (e.g., "Mar 8, 2026")
   const formatDate = (dateString) => {
     if (!dateString) return "No date";
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -114,6 +97,24 @@ function UserDashboard() {
     });
   };
 
+  // Format time for display (e.g., "9:00 AM")
+  const formatTime = (timeString) => {
+    if (!timeString || timeString === "Unknown") return "Unknown";
+    
+    // Handle if time is already formatted with AM/PM
+    if (timeString.includes('AM') || timeString.includes('PM')) {
+      return timeString;
+    }
+    
+    // Format from "09:00" to "9:00 AM"
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  // Format datetime for display
   const formatDateTime = (dateString) => {
     if (!dateString) return "No date";
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -467,14 +468,19 @@ function UserDashboard() {
             </div>
           ) : (
             appointments.map((apt) => {
-              const times = getTimeFromSlotId(apt.availabilitySlotId);
+              // Use displayDate if available, otherwise format bookingDate
+              const sessionDate = apt.displayDate || formatDate(apt.bookingDate);
+              // Use display times if available
+              const startTime = apt.displayStartTime || formatTime(apt.startTime);
+              const endTime = apt.displayEndTime || formatTime(apt.endTime);
+              
               return (
                 <div key={apt.id} className="appointment">
                   <div className="appointment-info">
                     <h4>Dr. {apt.therapist?.name || 'Therapist'}</h4>
                     <p>{apt.therapist?.specialization || 'Therapy Session'}</p>
                     <div className="appointment-date">
-                      {formatDate(apt.createdAt)} • {times.start} - {times.end}
+                      {sessionDate} • {startTime} - {endTime}
                     </div>
                   </div>
                   <div className="appointment-actions">
@@ -483,7 +489,12 @@ function UserDashboard() {
                     </span>
                     <button
                       className="btn-view"
-                      onClick={() => handleView({...apt, times})}
+                      onClick={() => handleView({
+                        ...apt,
+                        formattedDate: sessionDate,
+                        formattedStartTime: startTime,
+                        formattedEndTime: endTime
+                      })}
                     >
                       View
                     </button>
@@ -538,12 +549,16 @@ function UserDashboard() {
               
               <div className="detail-item">
                 <div className="detail-label">Session Date</div>
-                <div className="detail-value">{formatDate(selectedAppointment.createdAt)}</div>
+                <div className="detail-value">
+                  {selectedAppointment.formattedDate || formatDate(selectedAppointment.bookingDate)}
+                </div>
               </div>
               
               <div className="detail-item">
                 <div className="detail-label">Session Time</div>
-                <div className="detail-value">{selectedAppointment.times?.start} - {selectedAppointment.times?.end}</div>
+                <div className="detail-value">
+                  {selectedAppointment.formattedStartTime || formatTime(selectedAppointment.startTime)} - {selectedAppointment.formattedEndTime || formatTime(selectedAppointment.endTime)}
+                </div>
               </div>
               
               <div className="detail-item">

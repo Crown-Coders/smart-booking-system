@@ -28,6 +28,7 @@ function Calendar() {
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) return;
       const res = await fetch("http://localhost:5000/api/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -94,101 +95,85 @@ function Calendar() {
     }
   };
 
-  /** -------------------- CHECK IF TIME SLOT IS AVAILABLE -------------------- */
+  /** -------------------- UTILS -------------------- */
   const isTimeSlotAvailable = (time) => {
-    // Check if this time falls within any booked slot
     return !bookedSlots.some(slot => 
       time >= slot.startTime && time < slot.endTime
     );
   };
 
-  /** -------------------- GET ALL AVAILABLE TIME SLOTS -------------------- */
   const getAvailableTimeSlots = () => {
     return allTimeSlots.filter(slot => isTimeSlotAvailable(slot.time));
   };
 
-  /** -------------------- GET UNAVAILABLE TIME SLOTS -------------------- */
   const getUnavailableTimeSlots = () => {
     return allTimeSlots.filter(slot => !isTimeSlotAvailable(slot.time));
   };
 
-  /** -------------------- BOOKING -------------------- */
-  const calculatePrice = (startTime, endTime) => {
+  const calculateDuration = (startTime, endTime) => {
     if (!startTime || !endTime) return 0;
     const start = new Date(`1970-01-01T${startTime}`);
     const end = new Date(`1970-01-01T${endTime}`);
-    const hours = (end - start) / (1000 * 60 * 60);
+    return (end - start) / (1000 * 60 * 60);
+  };
+
+  const calculatePrice = (startTime, endTime) => {
+    const hours = calculateDuration(startTime, endTime);
     return hours * 800;
   };
 
-const handleBooking = async () => {
-  if (!user) return alert("Please log in to book an appointment");
-  if (!bookingData.therapistId || (!bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)))
-    return alert("Select therapist and time slot");
-
-  if (bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)) {
-    const slot = availableSlots.find((s) => s.id === bookingData.slotId);
-    if (slot) {
-      setBookingData((prev) => ({
-        ...prev,
-        startTime: slot.time,
-        endTime: new Date(new Date(`2000-01-01T${slot.time}`).getTime() + 30 * 60 * 1000)
-          .toTimeString()
-          .slice(0, 5),
-      }));
+  /** -------------------- BOOKING -------------------- */
+  const handleBooking = async () => {
+    if (!user) return alert("Please log in to book an appointment");
+    if (!bookingData.therapistId || !bookingData.startTime || !bookingData.endTime) {
+        return alert("Select therapist and time slot");
     }
-  }
 
-  try {
-    setLoading(true);
-    const token = localStorage.getItem("token");
-    const payload = {
-      userId: user.id,
-      therapistId: bookingData.therapistId,
-      bookingDate: bookingData.date,
-      startTime: bookingData.startTime,
-      endTime: bookingData.endTime,
-      description: bookingData.description,
-      price: calculatePrice(bookingData.startTime, bookingData.endTime),
-    };
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const payload = {
+        userId: user.id,
+        therapistId: bookingData.therapistId,
+        bookingDate: bookingData.date,
+        startTime: bookingData.startTime,
+        endTime: bookingData.endTime,
+        description: bookingData.description,
+        price: calculatePrice(bookingData.startTime, bookingData.endTime),
+      };
 
-    const res = await fetch("http://localhost:5000/api/bookings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch("http://localhost:5000/api/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || "Booking failed");
-    }
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Booking failed");
+      }
 
       const data = await res.json();
 
+      // Trigger PayFast Payment
       const payfastRes = await fetch(
         `http://localhost:5000/api/bookings/payfast/${data.booking.id}`,
         { method: "POST" }
       );
 
       const { url } = await payfastRes.json();
+      
+      if (url) {
+        window.location.href = url; // Redirect to PayFast
+      } else {
+        alert("Booking request submitted! Awaiting admin approval.");
+        setShowBookingModal(false);
+        resetBookingForm();
+      }
 
-      window.location.href = url;
-      ; // redirect to PayFast sandbox
-
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-      alert("Booking request submitted! Awaiting admin approval.");
-      setShowBookingModal(false);
-      resetBookingForm();
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -247,7 +232,7 @@ const handleBooking = async () => {
     }));
   };
 
-  /** -------------------- CALENDAR -------------------- */
+  /** -------------------- CALENDAR LOGIC -------------------- */
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const monthNames = [
@@ -264,7 +249,6 @@ const handleBooking = async () => {
   const goToNextMonth = () => setCurrentDate(new Date(year, month+1,1));
   const goToToday = () => setCurrentDate(new Date());
 
-  // Filter available end times (must be after start time and all slots in between must be available)
   const getAvailableEndTimes = () => {
     if (!bookingData.startTime) return [];
     
@@ -273,7 +257,6 @@ const handleBooking = async () => {
     
     for (let i = startIndex + 1; i < allTimeSlots.length; i++) {
       const slot = allTimeSlots[i];
-      // Check if this slot and all slots between start and this slot are available
       let isRangeAvailable = true;
       for (let j = startIndex; j <= i; j++) {
         if (!isTimeSlotAvailable(allTimeSlots[j].time)) {
@@ -284,15 +267,12 @@ const handleBooking = async () => {
       if (isRangeAvailable) {
         availableEndTimes.push(slot);
       } else {
-        // Once we hit an unavailable slot, stop (can't skip over booked slots)
         break;
       }
     }
-    
     return availableEndTimes;
   };
 
-  /** -------------------- JSX -------------------- */
   return (
     <>
       <div className="soft-calendar">
@@ -327,7 +307,6 @@ const handleBooking = async () => {
         </div>
       </div>
 
-      {/* -------- BOOKING MODAL -------- */}
       {showBookingModal && (
         <div className="modal-overlay" onClick={() => {setShowBookingModal(false); resetBookingForm();}}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -338,10 +317,7 @@ const handleBooking = async () => {
 
             <div className="date-display">
               <strong>Session Date:</strong> {new Date(selectedDate).toLocaleDateString("en-US", {
-                weekday: "long", 
-                year: "numeric", 
-                month: "long", 
-                day: "numeric"
+                weekday: "long", year: "numeric", month: "long", day: "numeric"
               })}
             </div>
 
@@ -359,7 +335,6 @@ const handleBooking = async () => {
 
             {bookingData.therapistId && (
               <>
-                {/* Available Time Slots Display */}
                 {loading ? (
                   <div className="loading-spinner">Loading available slots...</div>
                 ) : (
@@ -379,54 +354,25 @@ const handleBooking = async () => {
                           ))}
                         </div>
                       </div>
-
-                      {getUnavailableTimeSlots().length > 0 && (
-                        <div className="slots-section">
-                          <h4>Unavailable Slots</h4>
-                          <div className="time-slots unavailable">
-                            {getUnavailableTimeSlots().map(slot => (
-                              <button
-                                key={slot.time}
-                                className="time-slot unavailable-slot"
-                                disabled
-                              >
-                                {slot.display}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Start Time Dropdown */}
                     <div className="form-group">
                       <label>Start Time</label>
-                      <select 
-                        value={bookingData.startTime} 
-                        onChange={handleStartTimeChange}
-                      >
+                      <select value={bookingData.startTime} onChange={handleStartTimeChange}>
                         <option value="">Select start time</option>
                         {getAvailableTimeSlots().map(slot => (
-                          <option key={slot.time} value={slot.time}>
-                            {slot.display}
-                          </option>
+                          <option key={slot.time} value={slot.time}>{slot.display}</option>
                         ))}
                       </select>
                     </div>
 
-                    {/* End Time Dropdown */}
                     {bookingData.startTime && (
                       <div className="form-group">
                         <label>End Time</label>
-                        <select 
-                          value={bookingData.endTime} 
-                          onChange={handleEndTimeChange}
-                        >
+                        <select value={bookingData.endTime} onChange={handleEndTimeChange}>
                           <option value="">Select end time</option>
                           {getAvailableEndTimes().map(slot => (
-                            <option key={slot.time} value={slot.time}>
-                              {slot.display}
-                            </option>
+                            <option key={slot.time} value={slot.time}>{slot.display}</option>
                           ))}
                         </select>
                       </div>
@@ -434,25 +380,12 @@ const handleBooking = async () => {
                   </>
                 )}
 
-                {/* Session Summary */}
                 {bookingData.startTime && bookingData.endTime && (
                   <div className="session-summary">
                     <h4>Session Summary</h4>
                     <div className="summary-row">
-                      <span>Date:</span>
-                      <strong>{new Date(bookingData.date).toLocaleDateString("en-US", {
-                        month: 'short', day: 'numeric', year: 'numeric'
-                      })}</strong>
-                    </div>
-                    <div className="summary-row">
                       <span>Time:</span>
-                      <strong>
-                        {new Date(`2000-01-01T${bookingData.startTime}`).toLocaleTimeString("en-US", {
-                          hour: 'numeric', minute: '2-digit', hour12: true
-                        })} - {new Date(`2000-01-01T${bookingData.endTime}`).toLocaleTimeString("en-US", {
-                          hour: 'numeric', minute: '2-digit', hour12: true
-                        })}
-                      </strong>
+                      <strong>{bookingData.startTime} - {bookingData.endTime}</strong>
                     </div>
                     <div className="summary-row">
                       <span>Duration:</span>
@@ -472,15 +405,13 @@ const handleBooking = async () => {
               <textarea 
                 value={bookingData.description} 
                 onChange={e => setBookingData(prev => ({...prev, description: e.target.value}))}
-                placeholder="Brief description of your appointment reason..."
+                placeholder="Brief description..."
                 rows="3"
               />
             </div>
 
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => {setShowBookingModal(false); resetBookingForm();}}>
-                Cancel
-              </button>
+              <button className="btn-secondary" onClick={() => {setShowBookingModal(false); resetBookingForm();}}>Cancel</button>
               <button 
                 className="btn-primary"
                 onClick={handleBooking} 
