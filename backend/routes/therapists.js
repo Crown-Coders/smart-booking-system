@@ -7,11 +7,8 @@ const bcrypt = require('bcrypt');
 // GET all therapists - using manual fetching (NO include)
 router.get('/', async (req, res) => {
   try {
-    console.log('Fetching all therapists...');
-    
     // Fetch all therapist profiles
     const therapistProfiles = await TherapistProfile.findAll();
-    console.log(`Found ${therapistProfiles.length} therapist profiles`);
 
     // For each profile, fetch the corresponding user manually
     const therapists = await Promise.all(
@@ -41,10 +38,8 @@ router.get('/', async (req, res) => {
       })
     );
 
-    console.log('Sending therapists data');
     res.json(therapists);
   } catch (err) {
-    console.error('Error in GET /api/therapists:', err);
     res.status(500).json({ error: 'Failed to fetch therapists' });
   }
 });
@@ -122,7 +117,6 @@ router.post('/', async (req, res) => {
       therapist: fullProfile
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Failed to create therapist' });
   }
 });
@@ -136,7 +130,6 @@ router.delete('/:id', async (req, res) => {
     await therapist.destroy();
     res.json({ message: 'Therapist removed' });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });

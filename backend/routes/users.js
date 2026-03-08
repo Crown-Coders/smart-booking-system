@@ -5,34 +5,21 @@ const { User } = require("../models");
 
 router.get("/me", async (req, res) => {
   try {
-
-    console.log("AUTH HEADER:", req.headers.authorization);
-
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
       return res.status(401).json({ message: "No token provided" });
     }
-
     
     const token = authHeader.split(" ")[1];
-
-    console.log("TOKEN:", token);
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
-
-    console.log("DECODED:", decoded);
-
     const user = await User.findByPk(decoded.id);
 
     res.json(user);
-
   } catch (err) {
-    console.error("JWT ERROR:", err.message);
     res.status(401).json({ message: "Invalid token" });
   }
 });
-
 
 // GET all users
 router.get('/', async (req, res) => {
@@ -40,7 +27,6 @@ router.get('/', async (req, res) => {
     const users = await User.findAll();
     res.json(users);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Error fetching users' });
   }
 });
@@ -59,7 +45,6 @@ router.patch('/:id/deactivate', async (req, res) => {
 
     res.json(user);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Error deactivating user' });
   }
 });
@@ -78,7 +63,6 @@ router.patch('/:id/activate', async (req, res) => {
 
     res.json(user);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Error activating user' });
   }
 });
