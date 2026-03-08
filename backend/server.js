@@ -12,6 +12,8 @@ const availabilityRoutes = require('./routes/availability');
 
 const app = express();
 const PORT = 5000;
+require('dotenv').config();
+
 
 // Configure CORS to accept requests from your frontend
 app.use(cors({

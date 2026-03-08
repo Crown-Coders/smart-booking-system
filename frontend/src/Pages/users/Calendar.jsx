@@ -121,67 +121,70 @@ function Calendar() {
     return hours * 800;
   };
 
-  const calculateDuration = (startTime, endTime) => {
-    if (!startTime || !endTime) return 0;
-    const start = new Date(`1970-01-01T${startTime}`);
-    const end = new Date(`1970-01-01T${endTime}`);
-    const hours = (end - start) / (1000 * 60 * 60);
-    return hours;
-  };
+const handleBooking = async () => {
+  if (!user) return alert("Please log in to book an appointment");
+  if (!bookingData.therapistId || (!bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)))
+    return alert("Select therapist and time slot");
 
-  const handleBooking = async () => {
-    if (!user) return alert("Please log in to book an appointment");
-    if (!bookingData.therapistId || !bookingData.date || !bookingData.startTime || !bookingData.endTime)
-      return alert("Select therapist, date, start time and end time");
+  if (bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)) {
+    const slot = availableSlots.find((s) => s.id === bookingData.slotId);
+    if (slot) {
+      setBookingData((prev) => ({
+        ...prev,
+        startTime: slot.time,
+        endTime: new Date(new Date(`2000-01-01T${slot.time}`).getTime() + 30 * 60 * 1000)
+          .toTimeString()
+          .slice(0, 5),
+      }));
+    }
+  }
 
-    if (bookingData.startTime >= bookingData.endTime) {
-      return alert("End time must be after start time");
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    const payload = {
+      userId: user.id,
+      therapistId: bookingData.therapistId,
+      bookingDate: bookingData.date,
+      startTime: bookingData.startTime,
+      endTime: bookingData.endTime,
+      description: bookingData.description,
+      price: calculatePrice(bookingData.startTime, bookingData.endTime),
+    };
+
+    const res = await fetch("http://localhost:5000/api/bookings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Booking failed");
     }
 
-    // Check if the selected time range is still available
-    const isRangeAvailable = (() => {
-      const times = allTimeSlots.map(s => s.time);
-      const startIndex = times.indexOf(bookingData.startTime);
-      const endIndex = times.indexOf(bookingData.endTime);
-      
-      for (let i = startIndex; i < endIndex; i++) {
-        if (!isTimeSlotAvailable(times[i])) {
-          return false;
-        }
-      }
-      return true;
-    })();
+      const data = await res.json();
 
-    if (!isRangeAvailable) {
-      return alert("Sorry, some of the selected time slots are no longer available. Please choose a different time.");
-    }
+      const payfastRes = await fetch(
+        `http://localhost:5000/api/bookings/payfast/${data.booking.id}`,
+        { method: "POST" }
+      );
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      
-      const payload = {
-        userId: user.id,
-        therapistId: parseInt(bookingData.therapistId),
-        bookingDate: bookingData.date,
-        startTime: bookingData.startTime,
-        endTime: bookingData.endTime,
-        description: bookingData.description || ""
-      };
+      const { url } = await payfastRes.json();
 
-      const res = await fetch("http://localhost:5000/api/bookings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      window.location.href = url;
+      ; // redirect to PayFast sandbox
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Booking failed");
-      }
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
       alert("Booking request submitted! Awaiting admin approval.");
       setShowBookingModal(false);
