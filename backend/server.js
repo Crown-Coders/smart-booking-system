@@ -16,11 +16,11 @@ const availabilityRoutes = require('./routes/availability');
 const chatbot = require('./routes/chatbot');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Configure CORS to accept requests from your frontend
 app.use(cors({
-  origin: 'http://localhost:5173', // or whatever port your frontend runs on
+  origin: 'http://localhost:5173' || 'https://smart-booking-system-8cgy.onrender.com', // or whatever port your frontend runs on
   credentials: true
 }));
 app.use(bodyParser.json());
