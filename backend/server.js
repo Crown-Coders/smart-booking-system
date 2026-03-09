@@ -8,6 +8,8 @@ const userRoutes = require("./routes/users");
 const therapistsRouter = require('./routes/therapists');
 const bookingRoutes = require('./routes/booking');
 const availabilityRoutes = require('./routes/availability');
+const pool = require("./db");
+
 
 
 const app = express();
