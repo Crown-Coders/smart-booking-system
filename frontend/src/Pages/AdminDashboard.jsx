@@ -389,7 +389,7 @@ const [therapistsList, setTherapistsList] = useState([]);
 useEffect(() => {
   const fetchTherapists = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/therapists');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`);
       if (!res.ok) throw new Error('Failed to fetch therapists');
       const data = await res.json();
 
@@ -723,7 +723,7 @@ return (
               style={{ padding: '0.5rem 1rem', backgroundColor: '#002324', color: '#EBFACF' }}
               onClick={async () => {
                 try {
-                  const res = await fetch('http://localhost:5000/api/therapists', {
+                  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newTherapist),

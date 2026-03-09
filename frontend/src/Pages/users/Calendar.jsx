@@ -29,7 +29,7 @@ function Calendar() {
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/users/me", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch user");
@@ -42,7 +42,7 @@ function Calendar() {
 
   const fetchTherapists = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/therapists");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`);
       if (!res.ok) throw new Error("Failed to fetch therapists");
       const data = await res.json();
       setTherapists(data);
@@ -81,7 +81,7 @@ function Calendar() {
       const allSlots = generateStaticSlots();
 
       const res = await fetch(
-        `http://localhost:5000/api/bookings/available/${therapistId}`
+        `${import.meta.env.VITE_API_URL}/api/bookings/available/${therapistId}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -142,7 +142,7 @@ const handleBooking = async () => {
       price: calculatePrice(bookingData.startTime, bookingData.endTime),
     };
 
-    const res = await fetch("http://localhost:5000/api/bookings", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -159,7 +159,7 @@ const handleBooking = async () => {
       const data = await res.json();
 
       const payfastRes = await fetch(
-        `http://localhost:5000/api/bookings/payfast/${data.booking.id}`,
+        `${import.meta.env.VITE_API_URL}/api/bookings/payfast/${data.booking.id}`,
         { method: "POST" }
       );
 
