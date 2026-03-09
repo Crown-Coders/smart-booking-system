@@ -8,7 +8,7 @@ import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer"; 
 // AI Chatbot
-import AIChatbot from "./components/AI/AIChatbot";
+import AIChatbot from "./components/AI/Chatbot";
 import ChatbotButton from "./components/AI/ChatbotButton";
 
 // Auth & Public pages
