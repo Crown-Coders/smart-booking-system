@@ -20,7 +20,7 @@ function UserDashboard() {
       try {
         const token = localStorage.getItem("token");
 
-        const response = await fetch("http://localhost:5000/api/users/me", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -43,7 +43,7 @@ function UserDashboard() {
   useEffect(() => {
     const fetchTherapists = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/therapists");
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`);
         const data = await response.json();
 
         setTherapists(data);
