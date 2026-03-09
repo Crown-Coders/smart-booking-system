@@ -86,7 +86,7 @@ const MENU_BY_ROLE = {
     { name: "Total Sessions", path: "/total-sessions" },
     { name: "Upcoming Sessions", path: "/upcoming-sessions" },
     { name: "Booking History", path: "/booking-history" },
-    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
+       // AI Chatbot removed – now accessible via floating button
   ],
 
   client: [
@@ -94,7 +94,7 @@ const MENU_BY_ROLE = {
     { name: "My Appointments", path: "/appointments" },
     { name: "Calendar", path: "/calendar" },
     { name: "Messages", path: "/messages" },
-    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
+      // AI Chatbot removed – now accessible via floating button
   ],
 
   superuser: [
@@ -103,7 +103,7 @@ const MENU_BY_ROLE = {
     { name: "Therapists", path: "/admin/therapists" },
     { name: "Reports", path: "/admin/reports" },
     { name: "System Settings", path: "/admin/settings" },
-    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
+    // AI Chatbot removed – now accessible via floating button
   ],
 };
 

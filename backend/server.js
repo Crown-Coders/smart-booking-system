@@ -1,21 +1,22 @@
+// backend/server.js
+require('dotenv').config(); // MUST BE AT THE VERY TOP! Loads the OpenAI key first.
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./models');
+
+// Route imports
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require("./routes/users");
 const therapistsRouter = require('./routes/therapists');
 const bookingRoutes = require('./routes/booking');
 const availabilityRoutes = require('./routes/availability');
-const pool = require("./db");
-
-
+const chatbot = require('./routes/chatbot');
 
 const app = express();
 const PORT = 5000;
-require('dotenv').config();
-
 
 // Configure CORS to accept requests from your frontend
 app.use(cors({
@@ -27,17 +28,21 @@ app.use(bodyParser.json());
 // Auth Routes
 app.use('/api/auth', authRoutes);
 
-// Admin Routes
+// Admin & Therapist Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/therapists', therapistsRouter);
 
 // User Routes
 app.use('/api/users', userRoutes);
 
-// booking routes
+// Booking & Availability Routes
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/availability', availabilityRoutes);
 
+// Chatbot Route 
+app.use('/api/chat', chatbot);
+
+// Base test route
 app.get('/', (req, res) => res.send('Server is running'));
 
 // Sync DB and start server
