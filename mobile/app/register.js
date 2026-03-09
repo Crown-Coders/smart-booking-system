@@ -1,0 +1,251 @@
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Image, 
+  Animated 
+} from "react-native";
+
+import { useRouter } from "expo-router";
+import { useState, useRef } from "react";
+
+export default function Register() {
+
+  const router = useRouter();
+
+  // Input states
+  const [firstName, setFirstName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Animated button
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleValue, { toValue: 0.95, useNativeDriver: true }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  return (
+    <View style={styles.container}>
+
+      <View style={styles.card}>
+
+        {/* Logo */}
+        <Image
+          source={require("../assets/images/splash.png")}
+          style={styles.logo}
+        />
+
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Sign up to get started</Text>
+
+        {/* Name Inputs */}
+        <View style={styles.field}>
+          <Text style={styles.label}>First Name</Text>
+          <TextInput
+            placeholder="First Name"
+            placeholderTextColor="#777"
+            style={styles.input}
+            value={firstName}
+            onChangeText={setFirstName}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Last Name</Text>
+          <TextInput
+            placeholder="Last Name"
+            placeholderTextColor="#777"
+            style={styles.input}
+            value={surname}
+            onChangeText={setSurname}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>ID Number</Text>
+          <TextInput
+            placeholder="Enter your ID Number"
+            placeholderTextColor="#777"
+            style={styles.input}
+            value={idNumber}
+            onChangeText={setIdNumber}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            placeholder="you@example.com"
+            placeholderTextColor="#777"
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+          />
+        </View>
+
+        {/* Passwords */}
+        <View style={styles.row}>
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor="#777"
+              secureTextEntry
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+            />
+          </View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor="#777"
+              secureTextEntry
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+          </View>
+        </View>
+
+        {/* Sign Up Button */}
+        <Animated.View style={styles.animatedButton(scaleValue)}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => console.log("Register pressed")}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+          >
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Login Redirect */}
+        <Text style={styles.loginText}>
+          Already have an account?
+          <Text style={styles.loginLink} onPress={() => router.push("/")}>
+            {" "}Login
+          </Text>
+        </Text>
+
+      </View>
+
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+
+  card: {
+    width: "100%",
+    maxWidth: 350,
+    backgroundColor: "#E5DDDE",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    elevation: 5,
+    alignItems: "flex-start", // fields aligned to the left
+  },
+
+  logo: {
+    width: 100,
+    height: 100,
+    alignSelf: "center",
+    marginBottom: 10,
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#002324",
+    textAlign: "center",
+    alignSelf: "stretch",
+  },
+
+  subtitle: {
+    fontSize: 14,
+    color: "#A1AD95",
+    textAlign: "center",
+    marginBottom: 15,
+    alignSelf: "stretch",
+  },
+
+  field: {
+    width: "100%",
+    marginBottom: 12,
+  },
+
+  label: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#002324",
+    marginBottom: 4,
+  },
+
+  input: {
+    width: "100%",
+    height: 42,
+    borderWidth: 1,
+    borderColor: "#A1AD95",
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 10,
+  },
+
+  row: {
+    flexDirection: "row",
+    width: "100%",
+    marginBottom: 12,
+  },
+
+  animatedButton: (scaleValue) => ({
+    transform: [{ scale: scaleValue }],
+    width: "100%",
+  }),
+
+  button: {
+    backgroundColor: "#002324",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "100%",
+    marginTop: 10,
+  },
+
+  buttonText: {
+    color: "#EBFACF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  loginText: {
+    textAlign: "center",
+    width: "100%",
+    marginTop: 15,
+  },
+
+  loginLink: {
+    color: "#002324",
+    fontWeight: "bold",
+  },
+
+});
