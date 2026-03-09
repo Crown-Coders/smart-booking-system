@@ -131,7 +131,7 @@ router.post("/payfast/:bookingId", async (req, res) => {
 
       return_url: "https://smart-booking-system-8cgy.onrender.com/payment-success",
       cancel_url: "https://smart-booking-system-8cgy.onrender.com/payment-cancel",
-      notify_url: `${import.meta.env.VITE_API_URL}/api/bookings/payfast-ipn`,
+      notify_url: `${process.env.VITE_API_URL}/api/bookings/payfast-ipn`,
 
       name_first: firstName,
       name_last: lastName,
