@@ -13,21 +13,28 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  Booking.init({
-    clientId: DataTypes.INTEGER,
-    therapistId: DataTypes.INTEGER,
-    serviceId: DataTypes.INTEGER,
-    availabilitySlotId: DataTypes.INTEGER,
-    status: {
-  type: DataTypes.ENUM('PENDING', 'CONFIRMED', 'CANCELLED'),
-  defaultValue: 'PENDING'
-},
+Booking.init({
+  clientId: DataTypes.INTEGER,
+  therapistId: DataTypes.INTEGER,
 
-    paymentIntentId: DataTypes.STRING,
-    notes: DataTypes.TEXT
-  }, {
-    sequelize,
-    modelName: 'Booking',
-  });
+  bookingDate: DataTypes.DATEONLY,
+  startTime: DataTypes.TIME,
+  endTime: DataTypes.TIME,
+
+  serviceId: DataTypes.INTEGER,
+  availabilitySlotId: DataTypes.INTEGER,
+
+  status: {
+    type: DataTypes.ENUM('PENDING', 'CONFIRMED', 'CANCELLED'),
+    defaultValue: 'PENDING'
+  },
+
+  paymentIntentId: DataTypes.STRING,
+  notes: DataTypes.TEXT
+}, {
+  sequelize,
+  modelName: 'Booking',
+});
+
   return Booking;
 };

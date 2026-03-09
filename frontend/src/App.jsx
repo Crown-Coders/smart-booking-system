@@ -28,8 +28,14 @@ import UserDashboard from './Pages/users/UserDashboard';
 import MyAppointments from './Pages/users/MyAppointments';
 import Calendar from './Pages/users/Calendar';
 import Messages from './Pages/users/Messages';
+import PaymentSuccess from "./Pages/PaymentSuccess";
+import PaymentCancel from "./Pages/PaymentCancel";
+
+
+// Admin pages
 import AdminDashboard from './Pages/AdminDashboard';
- 
+import UsersPage from './Pages/UserPage';
+
 // Helper to detect dashboard routes for showing sidebar
 const isDashboardRoute = (pathname) => {
   const dashboardPaths = [
@@ -134,10 +140,17 @@ function AppLayout() {
           <Route path="/appointments" element={<MyAppointments />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/messages" element={<Messages />} />
-           
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancel" element={<PaymentCancel />} />
+
+          <Route path="/ai-chatbot" element={<div>AI Chatbot (Coming Soon)</div>} />
           <Route
               path="/admin"
               element={user?.role === "SUPERUSER" ? <AdminDashboard /> : <LandingPage />}
+            />
+            <Route
+              path="/admin/users"
+              element={user?.role === "SUPERUSER" ? <UsersPage /> : <LandingPage />}
             />
             <Route
               path="/therapist/dashboard"

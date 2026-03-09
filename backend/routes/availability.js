@@ -1,31 +1,31 @@
-const express = require('express');
-const { AvailabilitySlot } = require('../models'); 
+// routes/availability.js
+const express = require("express");
 const router = express.Router();
+const { AvailabilitySlot } = require("../models");
 
-// GET /api/availability?therapistId=123&date=2025-03-20
-router.get('/', async (req, res) => {
+// Get availability for therapist by date
+router.get("/:therapistId", async (req, res) => {
   try {
-    const { therapistId, date } = req.query;
+    const { therapistId } = req.params;
+    const { date } = req.query;
 
-    if (!therapistId || !date) {
-      return res.status(400).json({ error: 'Missing therapistId or date' });
+    const whereClause = {
+      therapistId: therapistId
+    };
+
+    if (date) {
+      whereClause.date = date;
     }
 
-    // Find all slots for this therapist on the given date that are not booked
-    const availableSlots = await AvailabilitySlot.findAll({
-      where: {
-        therapistId,
-        date,
-        isBooked: false
-      },
-      attributes: ['id', 'startTime', 'endTime'], // return what you need
-      order: [['startTime', 'ASC']]
+    const slots = await AvailabilitySlot.findAll({
+      where: whereClause,
+      order: [['time', 'ASC']]
     });
 
-    res.json({ available: availableSlots });
+    res.json(slots);
   } catch (error) {
-    console.error('Availability error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error fetching availability:', error);
+    res.status(500).json({ error: "Failed to fetch availability" });
   }
 });
 
