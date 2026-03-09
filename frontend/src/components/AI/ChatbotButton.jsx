@@ -12,49 +12,45 @@ function ChatbotButton({ onClick }) {
   };
 
   return (
-    <button 
-      onClick={onClick}
-      style={{
-        position: 'fixed',
-        bottom: '30px',
-        right: '30px',
-        backgroundColor: '#002324', // Your --primary-dark
-        color: '#EBFACF', // Your --primary-light
-        border: 'none',
-        // Refactored to create a distinct chat bubble shape using varying border radii
-        borderRadius: '25px 25px 0 25px', // Strongly rounds top/left and creates a sharp point at the bottom-right
-        width: '65px',
-        height: '65px',
-        // fontSize removed, as it's no longer needed for text content
-        boxShadow: '0 8px 20px rgba(0, 35, 36, 0.2)',
-        cursor: 'pointer',
-        zIndex: 9999, // Keeps it on top of everything
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        transition: 'transform 0.3s ease, background-color 0.3s ease',
-        padding: 0, // Ensure no padding interferes with the image size
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'scale(1.1) translateY(-5px)';
-        e.currentTarget.style.backgroundColor = '#A1AD95'; // Your --accent color
-        e.currentTarget.style.color = '#002324';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'scale(1) translateY(0)';
-        e.currentTarget.style.backgroundColor = '#002324'; // Corrected from typo back to original color
-        e.currentTarget.style.color = '#EBFACF';
-      }}
-      aria-label="Open AI Care Assistant"
-      title="Chat with our AI Assistant"
-    >
-      {/* Replaced emoji with an image tag */}
-      <img 
-        src={chatbotLogo} 
-        alt="AI Assistant logo" 
-        style={logoStyle} 
-      />
-    </button>
+ // ChatbotButton.jsx
+<button 
+  onClick={onClick}
+  style={{
+    position: 'fixed',
+    bottom: '30px',
+    right: '30px',
+    backgroundColor: '#004B45', // Darker teal for contrast
+    color: '#EBFACF',
+    border: '2px solid #A1AD95', // subtle border to separate from footer
+    borderRadius: '25px 25px 0 25px',
+    width: '65px',
+    height: '65px',
+    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.3)', // stronger shadow for visibility
+    cursor: 'pointer',
+    zIndex: 9999,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 0,
+    transition: 'transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease',
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = 'scale(1.1) translateY(-5px)';
+    e.currentTarget.style.backgroundColor = '#A1AD95'; // accent on hover
+    e.currentTarget.style.borderColor = '#002324';
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = 'scale(1) translateY(0)';
+    e.currentTarget.style.backgroundColor = '#004B45';
+    e.currentTarget.style.borderColor = '#A1AD95';
+  }}
+>
+  <img 
+    src={chatbotLogo} 
+    alt="AI Assistant logo" 
+    style={{ maxWidth: '70%', height: 'auto', display: 'block' }} 
+  />
+</button>
  );
 }
 

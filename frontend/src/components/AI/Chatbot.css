@@ -24,8 +24,8 @@
 }
 
 .chat-header {
-  background: var(--primary-dark);
-  color: var(--primary-light);
+  background: #004B45; /* match the bubble for visual connection */
+  color: #EBFACF;
   padding: 1.25rem;
   display: flex;
   justify-content: space-between;
@@ -84,8 +84,8 @@
 
 .message.bot {
   align-self: flex-start;
-  background-color: var(--neutral-bg);
-  color: var(--text-dark);
+  background-color: #F0F4F3; /* lighter than button/footer */
+  color: #002324;
   border-bottom-left-radius: 4px;
 }
 
