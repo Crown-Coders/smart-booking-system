@@ -6,8 +6,11 @@ import "./App.css";
 // Layout components
 import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
-import Footer from "./components/layout/Footer"; // Fixed missing import
- 
+import Footer from "./components/layout/Footer"; 
+// AI Chatbot
+import AIChatbot from "./components/AI/AIChatbot";
+import ChatbotButton from "./components/AI/ChatbotButton";
+
 // Auth & Public pages
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
@@ -51,7 +54,11 @@ function AppLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
- 
+
+ //chatbot's open/close status
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const toggleChat = () => setIsChatOpen(prev => !prev);
+
   const user = JSON.parse(localStorage.getItem("user"));
  
   // Show navbar on all pages
@@ -85,6 +92,7 @@ function AppLayout() {
     setIsAuthenticated(true);
   };
  
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
      
@@ -113,7 +121,7 @@ function AppLayout() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
           <Route path="/register" element={<Register onRegisterSuccess={handleLoginSuccess} />} />
- 
+          
           {/* Therapist routes */}
           <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
           <Route path="/profile" element={<Profile />} />
@@ -126,7 +134,7 @@ function AppLayout() {
           <Route path="/appointments" element={<MyAppointments />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/messages" element={<Messages />} />
-          <Route path="/ai-chatbot" element={<div>AI Chatbot (Coming Soon)</div>} />
+           
           <Route
               path="/admin"
               element={user?.role === "SUPERUSER" ? <AdminDashboard /> : <LandingPage />}
@@ -143,7 +151,13 @@ function AppLayout() {
  
         </Routes>
       </main>
- 
+      {/* Floating chatbot */}
+      {isAuthenticated && (
+        <>
+          <ChatbotButton onClick={toggleChat} />
+          <AIChatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        </>
+      )}
       {/* Footer  */}
       <Footer />
     </div>
