@@ -14,7 +14,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 // Import your screens
-import MyBookingsScreen from "./bookings";
+import BookingsScreen from "./bookings"; // <- bookings.js
 import CalendarScreen from "./calendar";
 import MessagingScreen from "./messaging";
 
@@ -27,13 +27,8 @@ function DashboardScreen({ navigation }) {
   const [selectedMood, setSelectedMood] = useState(null);
 
   // --- CARD PRESS ---
-  const pressIn = () => {
-    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
-  };
-
-  const pressOut = () => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-  };
+  const pressIn = () => { Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start(); };
+  const pressOut = () => { Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start(); };
 
   // --- MOOD PRESS ---
   const handleMoodPress = (mood) => {
@@ -90,9 +85,10 @@ function DashboardScreen({ navigation }) {
             </TouchableOpacity>
           </Animated.View>
 
+          {/* My Bookings CARD */}
           <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
             <TouchableOpacity
-              onPress={() => router.push("/user/bookings")}
+              onPress={() => router.push("/user/bookings")} // <-- Navigate to bookings.js
               onPressIn={pressIn}
               onPressOut={pressOut}
             >
@@ -114,7 +110,6 @@ function DashboardScreen({ navigation }) {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* BOOK SESSION BUTTON */}
           <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
             <TouchableOpacity
               onPress={() => router.push("/user/booking")}
@@ -132,58 +127,28 @@ function DashboardScreen({ navigation }) {
         {/* MOOD TRACKER */}
         <Text style={styles.sectionTitle}>How are you feeling today?</Text>
         <View style={styles.moodRow}>
-          <TouchableOpacity onPress={() => handleMoodPress("happy")}>
-            <Animated.Text
-              style={[
-                styles.moodEmoji,
-                selectedMood === "happy" && styles.moodSelected,
-                { transform: [{ scale: selectedMood === "happy" ? moodScale : 1 }] }
-              ]}
-            >😊</Animated.Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => handleMoodPress("okay")}>
-            <Animated.Text
-              style={[
-                styles.moodEmoji,
-                selectedMood === "okay" && styles.moodSelected,
-                { transform: [{ scale: selectedMood === "okay" ? moodScale : 1 }] }
-              ]}
-            >😐</Animated.Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => handleMoodPress("sad")}>
-            <Animated.Text
-              style={[
-                styles.moodEmoji,
-                selectedMood === "sad" && styles.moodSelected,
-                { transform: [{ scale: selectedMood === "sad" ? moodScale : 1 }] }
-              ]}
-            >😔</Animated.Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => handleMoodPress("angry")}>
-            <Animated.Text
-              style={[
-                styles.moodEmoji,
-                selectedMood === "angry" && styles.moodSelected,
-                { transform: [{ scale: selectedMood === "angry" ? moodScale : 1 }] }
-              ]}
-            >😡</Animated.Text>
-          </TouchableOpacity>
+          {["happy","okay","sad","angry"].map((mood, i) => (
+            <TouchableOpacity key={i} onPress={() => handleMoodPress(mood)}>
+              <Animated.Text
+                style={[
+                  styles.moodEmoji,
+                  selectedMood === mood && styles.moodSelected,
+                  { transform: [{ scale: selectedMood === mood ? moodScale : 1 }] }
+                ]}
+              >
+                {mood === "happy" ? "😊" : mood === "okay" ? "😐" : mood === "sad" ? "😔" : "😡"}
+              </Animated.Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {selectedMood === "happy" && (
-          <Text style={styles.moodMessage}>Great! Keep the positive energy today 🌿</Text>
-        )}
-        {selectedMood === "okay" && (
-          <Text style={styles.moodMessage}>Thanks for checking in. Take it one step at a time.</Text>
-        )}
-        {selectedMood === "sad" && (
-          <Text style={styles.moodMessage}>It’s okay to feel this way. Consider talking to someone 💙</Text>
-        )}
-        {selectedMood === "angry" && (
-          <Text style={styles.moodMessage}>Take a deep breath. Lets slow things down.</Text>
+        {selectedMood && (
+          <Text style={styles.moodMessage}>
+            {selectedMood === "happy" ? "Great! Keep the positive energy today 🌿" :
+             selectedMood === "okay" ? "Thanks for checking in. Take it one step at a time." :
+             selectedMood === "sad" ? "It’s okay to feel this way. Consider talking to someone 💙" :
+             "Take a deep breath. Lets slow things down."}
+          </Text>
         )}
 
         {/* UPCOMING SESSION */}
@@ -204,21 +169,35 @@ function DashboardScreen({ navigation }) {
 function CustomDrawerContent(props) {
   return (
     <DrawerContentScrollView {...props} style={styles.drawer}>
+
+      {/* CLOSE DRAWER BUTTON */}
+      <TouchableOpacity
+        onPress={() => props.navigation.closeDrawer()}
+        style={styles.closeButton}
+      >
+        <Text style={styles.closeText}>✕</Text>
+      </TouchableOpacity>
+
       <DrawerItem
         label="Dashboard"
         labelStyle={styles.drawerLabel}
         onPress={() => props.navigation.navigate("Dashboard")}
       />
+
       <DrawerItem
         label="My Bookings"
         labelStyle={styles.drawerLabel}
-        onPress={() => props.navigation.navigate("MyBookings")}
+        onPress={() => {
+          props.navigation.navigate("Bookings"); // <-- Navigate directly to bookings.js
+        }}
       />
+
       <DrawerItem
         label="Calendar"
         labelStyle={styles.drawerLabel}
         onPress={() => props.navigation.navigate("Calendar")}
       />
+
       <DrawerItem
         label="Messaging"
         labelStyle={styles.drawerLabel}
@@ -239,7 +218,7 @@ export default function UserDrawerNavigator() {
       screenOptions={{ headerShown: false }}
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
-      <Drawer.Screen name="MyBookings" component={MyBookingsScreen} />
+      <Drawer.Screen name="Bookings" component={BookingsScreen} />
       <Drawer.Screen name="Calendar" component={CalendarScreen} />
       <Drawer.Screen name="Messaging" component={MessagingScreen} />
     </Drawer.Navigator>
@@ -286,5 +265,7 @@ const styles = StyleSheet.create({
   moodSelected: { backgroundColor: "#EBFACF", borderRadius: 50, padding: 6 },
   moodMessage: { marginTop: 10, textAlign: "center", color: "#002324", fontWeight: "500" },
   drawer: { backgroundColor: "#002324" },
-  drawerLabel: { color: "#EBFACF" }
+  drawerLabel: { color: "#EBFACF" },
+  closeButton: { alignSelf: "flex-end", margin: 10 },
+  closeText: { fontSize: 28, color: "#EBFACF" }
 });

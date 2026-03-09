@@ -19,8 +19,12 @@ export default function Login() {
 
   const handleLogin = () => {
     // --- SUPERUSER LOGIN ---
-    if(email === "nqobilemagwaza6@gmail.com" && password === "Nqobile7#") {
+    if(email === "super@system.com" && password === "Super123!") {
       router.push("/admin/dashboard");
+      return;
+    }
+    if (email === "nqobilemagwazao@gmail.com" && password === "Nqobile7#") {
+      router.push("/therapist/dashboard");
       return;
     }
 

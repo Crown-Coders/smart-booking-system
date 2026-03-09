@@ -14,16 +14,11 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import Bookings from "./bookings";
-import CalendarScreen from "./calendar";
-import MessagingScreen from "./messaging"; // UPDATED import
-// AI Chatbot
-function AIChatbotScreen() {
-  return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>AI Chatbot</Text>
-    </View>
-  );
-}
+import Users from "./users";
+import Therapists from "./therapists";
+import Reports from "./reports";
+import Settings from "./settings";
+import AIChatbot from "./aichatbot";
 
 const Drawer = createDrawerNavigator();
 
@@ -54,53 +49,55 @@ function DashboardScreen({ navigation }) {
 
         {/* STAT CARDS */}
         <View style={styles.statsContainer}>
-          <View style={styles.statBox}>
+
+          <TouchableOpacity
+            style={styles.statBox}
+            onPress={() => navigation.navigate("Bookings")}
+          >
             <MaterialIcons name="event" size={26} color="#002324" />
-            <Text style={styles.statNumber}>3</Text>
-            <Text style={styles.statLabel}>Upcoming Bookings</Text>
-          </View>
-          <View style={styles.statBox}>
-            <MaterialIcons name="message" size={26} color="#002324" />
-            <Text style={styles.statNumber}>5</Text>
-            <Text style={styles.statLabel}>Unread Messages</Text>
-          </View>
-          <View style={styles.statBox}>
+            <Text style={styles.statNumber}>25</Text>
+            <Text style={styles.statLabel}>Total Bookings</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.statBox}
+            onPress={() => navigation.navigate("Bookings")}
+          >
+            <MaterialIcons name="schedule" size={26} color="#002324" />
+            <Text style={styles.statNumber}>7</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.statBox}
+            onPress={() => navigation.navigate("Bookings")}
+          >
             <MaterialIcons name="check-circle" size={26} color="#002324" />
             <Text style={styles.statNumber}>12</Text>
-            <Text style={styles.statLabel}>Total Sessions</Text>
-          </View>
+            <Text style={styles.statLabel}>Confirmed</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.statBox}
+            onPress={() => navigation.navigate("Bookings")}
+          >
+            <MaterialIcons name="event-available" size={26} color="#002324" />
+            <Text style={styles.statNumber}>6</Text>
+            <Text style={styles.statLabel}>Available Slots</Text>
+          </TouchableOpacity>
+
         </View>
-
-        {/* CLICKABLE CARDS */}
-        <TouchableOpacity onPress={() => navigation.navigate("Bookings")}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Upcoming Bookings</Text>
-            <Text style={styles.cardText}>View and manage bookings</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => navigation.navigate("Messaging")}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Unread Messages</Text>
-            <Text style={styles.cardText}>Check messages from users</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => navigation.navigate("Bookings")}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Total Sessions</Text>
-            <Text style={styles.cardText}>View all completed sessions</Text>
-          </View>
-        </TouchableOpacity>
       </ScrollView>
     </ImageBackground>
   );
 }
 
 /* ----------- CUSTOM DRAWER ----------- */
+
 function CustomDrawerContent(props) {
   return (
     <DrawerContentScrollView {...props} style={{ backgroundColor: "#002324" }}>
+
       <TouchableOpacity
         style={{ alignSelf: "flex-end", padding: 15 }}
         onPress={() => props.navigation.closeDrawer()}
@@ -113,31 +110,43 @@ function CustomDrawerContent(props) {
         labelStyle={{ color: "#EBFACF" }}
         onPress={() => props.navigation.navigate("Dashboard")}
       />
+
       <DrawerItem
-        label="Bookings"
+        label="Users"
         labelStyle={{ color: "#EBFACF" }}
-        onPress={() => props.navigation.navigate("Bookings")}
+        onPress={() => props.navigation.navigate("Users")}
       />
+
       <DrawerItem
-        label="Calendar"
+        label="Therapists"
         labelStyle={{ color: "#EBFACF" }}
-        onPress={() => props.navigation.navigate("Calendar")}
+        onPress={() => props.navigation.navigate("Therapists")}
       />
+
       <DrawerItem
-        label="Messaging"
+        label="Reports"
         labelStyle={{ color: "#EBFACF" }}
-        onPress={() => props.navigation.navigate("Messaging")}
+        onPress={() => props.navigation.navigate("Reports")}
       />
+
+      <DrawerItem
+        label="System Settings"
+        labelStyle={{ color: "#EBFACF" }}
+        onPress={() => props.navigation.navigate("Settings")}
+      />
+
       <DrawerItem
         label="AI Chatbot"
         labelStyle={{ color: "#EBFACF" }}
         onPress={() => props.navigation.navigate("AIChatbot")}
       />
+
     </DrawerContentScrollView>
   );
 }
 
 /* ----------- DRAWER NAVIGATOR ----------- */
+
 export default function AdminDashboard() {
   return (
     <Drawer.Navigator
@@ -146,16 +155,20 @@ export default function AdminDashboard() {
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
       <Drawer.Screen name="Bookings" component={Bookings} />
-      <Drawer.Screen name="Calendar" component={CalendarScreen} />
-      <Drawer.Screen name="Messaging" component={MessagingScreen} />
-      <Drawer.Screen name="AIChatbot" component={AIChatbotScreen} />
+      <Drawer.Screen name="Users" component={Users} />
+      <Drawer.Screen name="Therapists" component={Therapists} />
+      <Drawer.Screen name="Reports" component={Reports} />
+      <Drawer.Screen name="Settings" component={Settings} />
+      <Drawer.Screen name="AIChatbot" component={AIChatbot} />
     </Drawer.Navigator>
   );
 }
 
 /* ----------- STYLES ----------- */
+
 const styles = StyleSheet.create({
   container: { padding: 20 },
+
   navBar: {
     height: 60,
     flexDirection: "row",
@@ -164,21 +177,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     backgroundColor: "#002324",
   },
-  navTitle: { color: "#EBFACF", fontSize: 20, fontWeight: "bold" },
-  welcome: { fontSize: 18, fontWeight: "600", marginBottom: 20, color: "#002324" },
-  statsContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 25 },
+
+  navTitle: {
+    color: "#EBFACF",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  welcome: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 20,
+    color: "#002324",
+  },
+
+  statsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 25,
+  },
+
   statBox: {
     backgroundColor: "#EBFACF",
-    width: "30%",
-    padding: 15,
+    width: "48%",
+    padding: 18,
     borderRadius: 15,
     alignItems: "center",
+    marginBottom: 15,
   },
-  statNumber: { fontSize: 18, fontWeight: "bold", color: "#002324" },
-  statLabel: { fontSize: 12, textAlign: "center" },
-  card: { backgroundColor: "rgba(255,255,255,0.9)", padding: 20, borderRadius: 20, marginBottom: 15 },
-  cardTitle: { fontSize: 16, fontWeight: "600", color: "#002324" },
-  cardText: { fontSize: 14, color: "#4E5E5B" },
-  screen: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 24, fontWeight: "bold" },
+
+  statNumber: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#002324",
+  },
+
+  statLabel: {
+    fontSize: 12,
+    textAlign: "center",
+  },
 });
