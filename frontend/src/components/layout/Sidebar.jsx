@@ -1,16 +1,15 @@
 // src/components/layout/Sidebar.jsx
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-/* ===== COLOR PALETTE ===== */
 const COLORS = {
-  background: "#002324",      // Dark green sidebar
-  text: "#E5DDDE",            // Light cream text
-  hover: "#EBFACF",           // Soft green hover background
-  accent: "#A1AD95",          // Accent green for borders/highlights
-  disabled: "#A1AD95",        // Slightly muted accent for disabled
+  background: "#002324",
+  text: "#E5DDDE",
+  hover: "#EBFACF",
+  accent: "#A1AD95",
+  disabled: "#A1AD95",
 };
 
-/* ===== BASE STYLES ===== */
 const sidebarBase = {
   width: "240px",
   height: "100vh",
@@ -26,14 +25,19 @@ const sidebarBase = {
 };
 
 const headerStyle = {
-  marginBottom: "2rem",
-  color: COLORS.hover,          // Reserved for potential future use
-  fontSize: "1.5rem",
-  fontWeight: "700",
+  marginBottom: "1rem",
   display: "flex",
-  justifyContent: "flex-end",   // Align close button to the right
+  justifyContent: "space-between",
   alignItems: "center",
-  minHeight: "40px",            // Ensure consistent height even when empty
+  minHeight: "40px",
+};
+
+const sectionLabelStyle = {
+  color: COLORS.accent,
+  fontSize: "0.8rem",
+  fontWeight: 700,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
 };
 
 const closeBtnStyle = {
@@ -44,12 +48,6 @@ const closeBtnStyle = {
   color: COLORS.text,
   padding: "0.25rem 0.5rem",
   borderRadius: "4px",
-  transition: "background-color 0.2s",
-};
-
-const closeBtnHover = {
-  backgroundColor: COLORS.hover,
-  color: COLORS.background,
 };
 
 const navStyle = {
@@ -81,40 +79,42 @@ const disabledStyle = {
   color: COLORS.disabled,
 };
 
-/*  ROLE → MENU MAP */
 const MENU_BY_ROLE = {
   therapist: [
-    { name: "Dashboard" },
-    { name: "Appointments" },
-    { name: "Calendar" },
-    { name: "Clients" },
-    { name: "Profile" },
-    { name: "AI Chatbot", disabled: true },
+    { name: "Therapist Dashboard", path: "/therapist/dashboard" },
+    { name: "Profile", path: "/profile" },
+    { name: "Total Sessions", path: "/total-sessions" },
+    { name: "Upcoming Sessions", path: "/upcoming-sessions" },
+    { name: "Booking History", path: "/booking-history" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
 
   client: [
-    { name: "Dashboard" },
-    { name: "My Appointments" },
-    { name: "Calendar" },
-    { name: "Messages" },
-    { name: "AI Chatbot", disabled: true },
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "My Appointments", path: "/appointments" },
+    { name: "Calendar", path: "/calendar" },
+    { name: "Messages", path: "/messages" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
 
-  admin: [
-    { name: "Dashboard" },
-    { name: "Users" },
-    { name: "Therapists" },
-    { name: "Reports" },
-    { name: "System Settings" },
-    { name: "AI Chatbot", disabled: true },
+  superuser: [
+    { name: "Dashboard", path: "/admin" },
+    { name: "Users", path: "/admin/users" },
+    { name: "Therapists", path: "/admin/therapists" },
+    { name: "Reports", path: "/admin/reports" },
+    { name: "System Settings", path: "/admin/settings" },
+    { name: "AI Chatbot", path: "/ai-chatbot", disabled: true },
   ],
 };
 
+
 function Sidebar({ userRole, isOpen, onClose }) {
+  console.log("User Role:", userRole);
   const [hovered, setHovered] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Handle mobile responsiveness
   useEffect(() => {
     const checkScreen = () => setIsMobile(window.innerWidth <= 768);
     checkScreen();
@@ -122,17 +122,27 @@ function Sidebar({ userRole, isOpen, onClose }) {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
-  const menuItems = MENU_BY_ROLE[userRole] ?? [];
+  console.log("User Role:", userRole);
+
+ const menuItems = MENU_BY_ROLE[userRole?.toLowerCase()] ?? [];
+
 
   const sidebarStyle = {
     ...sidebarBase,
     transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
   };
 
+  const handleNavigation = (item) => {
+    if (!item.disabled && item.path) {
+      navigate(item.path);
+      if (isMobile) onClose();
+    }
+  };
+
   return (
     <aside style={sidebarStyle}>
-      {/* Sidebar header – now only contains the close button on mobile */}
       <div style={headerStyle}>
+        {userRole === "therapist" && <span style={sectionLabelStyle}>Therapist</span>}
         {isMobile && (
           <button
             style={closeBtnStyle}
@@ -145,35 +155,35 @@ function Sidebar({ userRole, isOpen, onClose }) {
               e.currentTarget.style.backgroundColor = "transparent";
               e.currentTarget.style.color = COLORS.text;
             }}
+            aria-label="Close sidebar"
           >
-            ✕
+            X
           </button>
         )}
       </div>
 
-      {/* Navigation items */}
       <ul style={navStyle}>
-        {menuItems.map((item, index) => (
-          <li
-            key={item.name}
-            style={{
-              ...navItemStyle,
-              ...(hovered === index ? hoverStyle : {}),
-              ...(item.disabled ? disabledStyle : {}),
-            }}
-            onMouseEnter={() => setHovered(index)}
-            onMouseLeave={() => setHovered(null)}
-            onClick={() => {
-              if (!item.disabled) {
-                console.log(`Navigating to ${item.name}`);
-                // Add actual navigation logic here (e.g., useNavigate)
-                if (isMobile) onClose();
-              }
-            }}
-          >
-            {item.name}
-          </li>
-        ))}
+        {menuItems.map((item, index) => {
+          const isActive = item.path === location.pathname;
+          return (
+            <li
+              key={item.name}
+              style={{
+                ...navItemStyle,
+                ...(hovered === index ? hoverStyle : {}),
+                ...(isActive ? hoverStyle : {}), 
+                ...(item.disabled ? disabledStyle : {}),
+              }}
+              onMouseEnter={() => setHovered(index)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => handleNavigation(item)} /* FIX: onClick is now properly an HTML attribute! */
+            >
+              {item.name}
+              {item.disabled && <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: COLORS.accent }}>(coming soon)</span>}
+            </li>
+
+          );
+        })}
       </ul>
     </aside>
   );

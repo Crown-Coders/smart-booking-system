@@ -1,7 +1,6 @@
-// src/components/layout/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
+import logo from "../../assets/images/logo-mental.com.png";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -28,9 +27,21 @@ function Login() {
 
       // ✅ Save token in localStorage
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      // ✅ Redirect to dashboard
-      navigate("/dashboard");
+
+      // Redirect based on role
+      if (data.user.role === "SUPERUSER" || data.user.role === "ADMIN") {
+        navigate("/admin");
+      } 
+      else if (data.user.role === "THERAPIST") {
+        navigate("/therapist/dashboard");
+      } 
+      else {
+        navigate("/dashboard");
+      }
+
+
     } catch (err) {
       setError(err.message);
     }
@@ -39,6 +50,7 @@ function Login() {
   return (
     <div className="login-card-wrapper">
       <div className="login-card">
+         <img src={logo} alt="Mental.com Logo" className="navbar-logo" />
         <h2>Welcome Back</h2>
         <p className="login-subtitle">Sign in to your account</p>
 

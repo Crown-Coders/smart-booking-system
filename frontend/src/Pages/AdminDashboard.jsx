@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect} from 'react';
 
 const colors = {
   deepTeal: '#002324',
@@ -15,63 +15,7 @@ const styles = {
     fontFamily: 'system-ui, Avenir, Helvetica, Arial, sans-serif',
     color: colors.deepTeal,
   },
-  sidebar: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '240px',
-    height: '100vh',
-    backgroundColor: colors.deepTeal,
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '0',
-    zIndex: 100,
-    boxShadow: '4px 0 24px rgba(0,35,36,0.15)',
-  },
-  sidebarLogo: {
-    padding: '2rem 1.5rem 1.5rem',
-    borderBottom: `1px solid rgba(161,173,149,0.2)`,
-  },
-  logoText: {
-    fontSize: '1.6rem',
-    fontWeight: '700',
-    color: colors.mint,
-    letterSpacing: '-0.02em',
-    lineHeight: 1.1,
-  },
-  logoSub: {
-    fontSize: '0.7rem',
-    color: colors.sage,
-    letterSpacing: '0.15em',
-    textTransform: 'uppercase',
-    marginTop: '4px',
-  },
-  sidebarNav: {
-    flex: 1,
-    padding: '1.5rem 0',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  navItem: (active) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '0.75rem 1.5rem',
-    cursor: 'pointer',
-    borderRadius: '0',
-    fontSize: '0.9rem',
-    fontWeight: active ? '600' : '400',
-    color: active ? colors.mint : colors.sage,
-    backgroundColor: active ? 'rgba(235,250,207,0.1)' : 'transparent',
-    borderLeft: active ? `3px solid ${colors.mint}` : '3px solid transparent',
-    transition: 'all 0.2s ease',
-    letterSpacing: '0.02em',
-  }),
-  sidebarFooter: {
-    padding: '1.5rem',
-    borderTop: `1px solid rgba(161,173,149,0.2)`,
-  },
+
   userBlock: {
     display: 'flex',
     alignItems: 'center',
@@ -114,10 +58,8 @@ const styles = {
     transition: 'all 0.2s',
   },
 main: {
-  marginLeft: '240px',   // keep sidebar offset
   padding: '0',
   minHeight: '100vh',
-  marginTop: '60px',     // push content below navbar
 },
 
   topbar: {
@@ -375,162 +317,457 @@ main: {
   },
 };
 
-const navItems = [
-  { id: 'overview', label: 'Overview', icon: '◈' },
-  { id: 'bookings', label: 'Bookings', icon: '◷' },
-  { id: 'therapists', label: 'Therapists', icon: '◉' },
-  { id: 'patients', label: 'Patients', icon: '◌' },
-  { id: 'reports', label: 'Reports', icon: '◫' },
-  { id: 'settings', label: 'Settings', icon: '◎' },
-];
 
-const user = { name: 'Admin User', initials: 'AU' };
+
 const stats = { total: 10, pending: 3, confirmed: 5, cancelled: 2, totalSlots: 8, availableSlots: 3 };
 const bookings = [
   { id: '1', patientName: 'John Doe', patientEmail: 'john@example.com', therapist: 'Dr. Smith', date: '2026-03-03', time: '10:00', status: 'pending', paymentStatus: 'paid', amount: 200, notes: '' },
   { id: '2', patientName: 'Jane Roe', patientEmail: 'jane@example.com', therapist: 'Dr. Brown', date: '2026-03-04', time: '12:00', status: 'confirmed', paymentStatus: 'unpaid', amount: 150, notes: 'Follow-up' },
   { id: '3', patientName: 'Mark Lane', patientEmail: 'mark@example.com', therapist: 'Dr. Smith', date: '2026-03-05', time: '09:00', status: 'cancelled', paymentStatus: 'unpaid', amount: 200, notes: '' },
 ];
-const therapists = [
-  { id: 't1', name: 'Alice', surname: 'Smith', title: 'Dr.', specialty: 'Physiotherapy', typeOfPractice: 'Private', yearsOfExperience: 5, hpcsaNumber: '12345', image: 'https://i.pravatar.cc/150?img=47' },
-  { id: 't2', name: 'Bob', surname: 'Brown', title: 'Dr.', specialty: 'Occupational Therapy', typeOfPractice: 'Clinic', yearsOfExperience: 7, hpcsaNumber: '67890', image: 'https://i.pravatar.cc/150?img=12' },
-  { id: 't3', name: 'Claire', surname: 'Nkosi', title: 'Dr.', specialty: 'Speech Therapy', typeOfPractice: 'Private', yearsOfExperience: 4, hpcsaNumber: '11223', image: 'https://i.pravatar.cc/150?img=23' },
-];
+
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
 
 export default function AdminDashboard() {
-  const [activeNav] = useState('overview');
   const [filter, setFilter] = useState('all');
+  // Modal open/close state
+const [showModal, setShowModal] = useState(false);
+const handleFileChange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const img = new Image();
+  const objectUrl = URL.createObjectURL(file);
+  img.src = objectUrl;
+
+  img.onload = () => {
+    const maxWidth = 150; // small width for production
+    const scale = maxWidth / img.width;
+    const canvas = document.createElement("canvas");
+    canvas.width = maxWidth;
+    canvas.height = img.height * scale;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    // compress to JPEG at 0.6 quality
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+
+    setNewTherapist(prev => ({
+      ...prev,
+      image: dataUrl
+    }));
+
+    URL.revokeObjectURL(objectUrl);
+  };
+};
+
+
+
+// New therapist form state
+const [newTherapist, setNewTherapist] = useState({
+  name: '',
+  surname: '',
+  title: 'Dr.',
+  specialty: '',
+  typeOfPractice: '',
+  yearsOfExperience: '',
+  licenseNumber: '',
+  bio: '',
+  image: '',
+  email: '',
+  password: '',
+});
+
+// Dynamic therapists list
+const [therapistsList, setTherapistsList] = useState([]);
 
   const filtered = filter === 'all' ? bookings : bookings.filter(b => b.status === filter);
 
-  return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-      <div style={styles.app}>
 
-        {/* Sidebar */}
-       
+useEffect(() => {
+  const fetchTherapists = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/therapists');
+      if (!res.ok) throw new Error('Failed to fetch therapists');
+      const data = await res.json();
 
-        {/* Main */}
-        <main style={styles.main}>
+      // map backend fields to match your frontend display if needed
+      const formatted = data.map(t => ({
+        id: t.id,
+        name: t.user?.name?.split(' ')[0] || '',  // if you stored full name in User
+        surname: t.user?.name?.split(' ')[1] || '',
+        title: 'Dr.',
+        specialty: t.specialization,
+        typeOfPractice: t.typeOfPractice,
+        yearsOfExperience: t.yearsOfExperience,
+        hpcsaNumber: t.licenseNumber,
+        image: t.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random()*70)}` // placeholder if empty
+      }));
+
+      setTherapistsList(formatted);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load therapists from server');
+    }
+  };
+
+  fetchTherapists();
+}, []);
 
 
-          <div style={styles.content}>
 
-            {/* Stats */}
-            <div style={styles.statsGrid}>
-              <div style={styles.statCard(colors.deepTeal)}>
-                <div style={styles.statLabel}>Total Bookings</div>
-                <div style={styles.statValue(colors.deepTeal)}>{stats.total}</div>
-                <div style={styles.statSub}>All time records</div>
+return (
+  <>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <div style={styles.app}>
+      {/* Sidebar */}
+
+      {/* Main */}
+      <main style={styles.main}>
+        <div style={styles.content}>
+          {/* Stats */}
+          <div style={styles.statsGrid}>
+            <div style={styles.statCard(colors.deepTeal)}>
+              <div style={styles.statLabel}>Total Bookings</div>
+              <div style={styles.statValue(colors.deepTeal)}>{stats.total}</div>
+              <div style={styles.statSub}>All time records</div>
+            </div>
+            <div style={styles.statCard('#B7791F')}>
+              <div style={styles.statLabel}>Pending</div>
+              <div style={styles.statValue('#B7791F')}>{stats.pending}</div>
+              <div style={styles.statSub}>Awaiting confirmation</div>
+            </div>
+            <div style={styles.statCard('#276749')}>
+              <div style={styles.statLabel}>Confirmed</div>
+              <div style={styles.statValue('#276749')}>{stats.confirmed}</div>
+              <div style={styles.statSub}>Ready to proceed</div>
+            </div>
+            <div style={styles.statCard(colors.sage)}>
+              <div style={styles.statLabel}>Available Slots</div>
+              <div style={styles.statValue(colors.deepTeal)}>
+                {stats.availableSlots}
+                <span style={{ fontSize: '1rem', color: colors.sage }}>
+                  /{stats.totalSlots}
+                </span>
               </div>
-              <div style={styles.statCard('#B7791F')}>
-                <div style={styles.statLabel}>Pending</div>
-                <div style={styles.statValue('#B7791F')}>{stats.pending}</div>
-                <div style={styles.statSub}>Awaiting confirmation</div>
-              </div>
-              <div style={styles.statCard('#276749')}>
-                <div style={styles.statLabel}>Confirmed</div>
-                <div style={styles.statValue('#276749')}>{stats.confirmed}</div>
-                <div style={styles.statSub}>Ready to proceed</div>
-              </div>
-              <div style={styles.statCard(colors.sage)}>
-                <div style={styles.statLabel}>Available Slots</div>
-                <div style={styles.statValue(colors.deepTeal)}>{stats.availableSlots}<span style={{ fontSize: '1rem', color: colors.sage }}>/{stats.totalSlots}</span></div>
-                <div style={styles.statSub}>Open appointments</div>
-              </div>
+              <div style={styles.statSub}>Open appointments</div>
+            </div>
+          </div>
+
+          {/* Bookings Table */}
+          <div style={styles.card}>
+            <div style={styles.tabsRow}>
+              {['all', 'pending', 'confirmed', 'cancelled'].map((tab) => (
+                <button
+                  key={tab}
+                  style={styles.tab(filter === tab)}
+                  onClick={() => setFilter(tab)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
             </div>
 
-            {/* Bookings Table */}
-            <div style={styles.card}>
-              
-
-              <div style={styles.tabsRow}>
-                {['all', 'pending', 'confirmed', 'cancelled'].map(tab => (
-                  <button key={tab} style={styles.tab(filter === tab)} onClick={() => setFilter(tab)}>
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ overflowX: 'auto', padding: '0 0 0.5rem' }}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      {['Patient', 'Therapist', 'Date', 'Time', 'Status', 'Payment', 'Amount', 'Notes', 'Actions'].map(h => (
-                        <th key={h} style={styles.th}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(b => (
-                      <tr key={b.id} style={{ transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#faf9f7'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        <td style={styles.td}>
-                          <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>{b.patientName}</div>
-                          <div style={{ fontSize: '0.72rem', color: colors.sage }}>{b.patientEmail}</div>
-                        </td>
-                        <td style={styles.td}>{b.therapist}</td>
-                        <td style={styles.td}>{formatDate(b.date)}</td>
-                        <td style={styles.td}>{b.time}</td>
-                        <td style={styles.td}><span style={styles.badge(b.status)}>{b.status}</span></td>
-                        <td style={styles.td}><span style={styles.badge(b.paymentStatus)}>{b.paymentStatus}</span></td>
-                        <td style={styles.td}>R{b.amount}</td>
-                        <td style={styles.td}><span style={{ color: colors.sage, fontStyle: b.notes ? 'normal' : 'italic' }}>{b.notes || 'None'}</span></td>
-                        <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button style={styles.actionBtn('approve')}>✓</button>
-                            <button style={styles.actionBtn('reject')}>✕</button>
-                            <button style={styles.actionBtn('edit')}>✎</button>
-                          </div>
-                        </td>
-                      </tr>
+            <div style={{ overflowX: 'auto', padding: '0 0 0.5rem' }}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    {[
+                      'Patient',
+                      'Therapist',
+                      'Date',
+                      'Time',
+                      'Status',
+                      'Payment',
+                      'Amount',
+                      'Notes',
+                      'Actions',
+                    ].map((h) => (
+                      <th key={h} style={styles.th}>
+                        {h}
+                      </th>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((b) => (
+                    <tr
+                      key={b.id}
+                      style={{ transition: 'background 0.15s' }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = '#faf9f7')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = 'transparent')
+                      }
+                    >
+                      <td style={styles.td}>
+                        <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>
+                          {b.patientName}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: colors.sage }}>
+                          {b.patientEmail}
+                        </div>
+                      </td>
+                      <td style={styles.td}>{b.therapist}</td>
+                      <td style={styles.td}>{formatDate(b.date)}</td>
+                      <td style={styles.td}>{b.time}</td>
+                      <td style={styles.td}>
+                        <span style={styles.badge(b.status)}>{b.status}</span>
+                      </td>
+                      <td style={styles.td}>
+                        <span style={styles.badge(b.paymentStatus)}>
+                          {b.paymentStatus}
+                        </span>
+                      </td>
+                      <td style={styles.td}>R{b.amount}</td>
+                      <td style={styles.td}>
+                        <span
+                          style={{
+                            color: colors.sage,
+                            fontStyle: b.notes ? 'normal' : 'italic',
+                          }}
+                        >
+                          {b.notes || 'None'}
+                        </span>
+                      </td>
+                      <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button style={styles.actionBtn('approve')}>✓</button>
+                          <button style={styles.actionBtn('reject')}>✕</button>
+                          <button style={styles.actionBtn('edit')}>✎</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Therapists */}
+          <div style={styles.card}>
+            <div style={styles.sectionHeader}>
+              <div style={styles.cardTitle}>Therapist Roster</div>
+              <button
+                style={styles.primaryBtn}
+                onClick={() => setShowModal(true)}
+              >
+                + Add Therapist
+              </button>
             </div>
 
-            {/* Therapists */}
-            <div style={styles.card}>
-              <div style={styles.sectionHeader}>
-                <div style={styles.cardTitle}>Therapist Roster</div>
-                <button style={styles.primaryBtn}>+ Add Therapist</button>
-              </div>
-              <div style={styles.therapistsGrid}>
-                {therapists.map(t => (
-                  <div key={t.id} style={styles.therapistCard}>
-                    <div style={styles.therapistCardTop}>
-                      <img src={t.image} alt={t.name} style={styles.therapistImg} />
-                      <div>
-                        <div style={styles.therapistName}>{t.title} {t.name} {t.surname}</div>
-                        <div style={styles.therapistSpec}>{t.specialty}</div>
+            <div style={styles.therapistsGrid}>
+              {therapistsList.map((t) => (
+                <div key={t.id} style={styles.therapistCard}>
+                  <div style={styles.therapistCardTop}>
+                    <img src={t.image} alt={t.name} style={styles.therapistImg} />
+                    <div>
+                      <div style={styles.therapistName}>
+                        {t.title} {t.name} {t.surname}
                       </div>
-                    </div>
-                    <div style={styles.therapistBody}>
-                      <div style={styles.therapistMeta}>
-                        <span style={{ display: 'inline-block', marginRight: '8px' }}>🏥 {t.typeOfPractice}</span><br/>
-                        <span style={{ display: 'inline-block', marginRight: '8px' }}>⏱ {t.yearsOfExperience} yrs experience</span><br/>
-                        <span>🪪 HPCSA: {t.hpcsaNumber}</span>
-                      </div>
-                      <div style={styles.therapistActions}>
-                        <button style={{ ...styles.actionBtn('edit'), flex: 1, justifyContent: 'center' }}>✎ Edit</button>
-                        <button style={{ ...styles.actionBtn('reject'), flex: 1, justifyContent: 'center' }}>🗑 Remove</button>
-                      </div>
+                      <div style={styles.therapistSpec}>{t.specialty}</div>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div style={styles.therapistBody}>
+                    <div style={styles.therapistMeta}>
+                      <span style={{ display: 'inline-block', marginRight: '8px' }}>
+                        🏥 {t.typeOfPractice}
+                      </span>
+                      <br />
+                      <span style={{ display: 'inline-block', marginRight: '8px' }}>
+                        ⏱ {t.yearsOfExperience} yrs experience
+                      </span>
+                      <br />
+                      <span>🪪 HPCSA: {t.hpcsaNumber}</span>
+                    </div>
+                    <div style={styles.therapistActions}>
+                      <button
+                        style={{ ...styles.actionBtn('edit'), flex: 1, justifyContent: 'center' }}
+                      >
+                        ✎ Edit
+                      </button>
+                      <button
+                        style={{ ...styles.actionBtn('reject'), flex: 1, justifyContent: 'center' }}
+                      >
+                        🗑 Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-
           </div>
-        </main>
+        </div>
+      </main>
+    </div>
 
+    {/* Add Therapist Modal */}
+    {showModal && (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#fff',
+            padding: '2rem',
+            borderRadius: '12px',
+            width: '400px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}
+        >
+          <h2>Add Therapist</h2>
+          <input
+            placeholder="First Name"
+            value={newTherapist.name}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, name: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            placeholder="Surname"
+            value={newTherapist.surname}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, surname: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            placeholder="Email"
+            value={newTherapist.email}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, email: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            placeholder="Password"
+            type="password"
+            value={newTherapist.password}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, password: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            placeholder="Specialty"
+            value={newTherapist.specialty}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, specialty: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            placeholder="Years of Experience"
+            type="number"
+            value={newTherapist.yearsOfExperience}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, yearsOfExperience: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            placeholder="License Number"
+            value={newTherapist.licenseNumber}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, licenseNumber: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            placeholder="Type of Practice"
+            value={newTherapist.typeOfPractice}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, typeOfPractice: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <textarea
+            placeholder="Bio"
+            value={newTherapist.bio}
+            onChange={(e) =>
+              setNewTherapist({ ...newTherapist, bio: e.target.value })
+            }
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
+            <button style={{ padding: '0.5rem 1rem' }} onClick={() => setShowModal(false)}>
+              Cancel
+            </button>
+            <button
+              style={{ padding: '0.5rem 1rem', backgroundColor: '#002324', color: '#EBFACF' }}
+              onClick={async () => {
+                try {
+                  const res = await fetch('http://localhost:5000/api/therapists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newTherapist),
+                  });
+                  if (!res.ok) throw new Error('Failed to add therapist');
+                  const data = await res.json();
+                  const formatted = {
+                    id: data.therapist.id,
+                    name: data.therapist.user?.name?.split(' ')[0] || '',
+                    surname: data.therapist.user?.name?.split(' ')[1] || '',
+                    title: 'Dr.',
+                    specialty: data.therapist.specialization,
+                    typeOfPractice: data.therapist.typeOfPractice,
+                    yearsOfExperience: data.therapist.yearsOfExperience,
+                    hpcsaNumber: data.therapist.licenseNumber,
+                    image: data.therapist.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random()*70)}`
+                  };
+                  setTherapistsList([...therapistsList, formatted]);
+
+                  setShowModal(false);
+                  setNewTherapist({
+                    name: '',
+                    surname: '',
+                    email: '',
+                    password: '',
+                    specialty: '',
+                    yearsOfExperience: '',
+                    licenseNumber: '',
+                    typeOfPractice: '',
+                    bio: '',
+                    image: '',
+                  });
+                } catch (err) {
+                  console.error(err);
+                  alert('Failed to add therapist');
+                }
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
       </div>
-    </>
-  );
+    )}
+  </>
+);
 }

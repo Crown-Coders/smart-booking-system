@@ -30,10 +30,14 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
 
-    role: {
-      type: DataTypes.ENUM('CLIENT', 'THERAPIST', 'ADMIN', 'SUPERUSER'),
-      defaultValue: 'CLIENT'
-    },
+  role: {
+    type: DataTypes.STRING,
+    defaultValue: 'CLIENT',
+    validate: {
+      isIn: [['CLIENT', 'THERAPIST', 'ADMIN', 'SUPERUSER']]
+    }
+  },
+
 
     // Django-style fields
     isStaff: {
