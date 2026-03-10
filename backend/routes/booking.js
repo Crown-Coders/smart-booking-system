@@ -129,8 +129,8 @@ router.post("/payfast/:bookingId", async (req, res) => {
       merchant_id: "10036644",
       merchant_key: "t4gr984tybhfx",
 
-      return_url: "https://smart-booking-system-8cgy.onrender.com/payment-success",
-      cancel_url: "https://smart-booking-system-8cgy.onrender.com/payment-cancel",
+      return_url: `${process.env.FRONTEND_URL}/payment-success`,
+      cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
       notify_url: `${process.env.VITE_API_URL}/api/bookings/payfast-ipn`,
 
       name_first: firstName,
