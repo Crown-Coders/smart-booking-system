@@ -240,7 +240,10 @@ function UserDashboard() {
 
             <div key={therapist.id} className="therapist-card">
 
-              <img src={therapist.image} alt={therapist.user?.name} />
+              <img
+                src={therapist.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random()*70)}`}
+                alt={therapist.user?.name}
+              />
 
               <div className="therapist-body">
 
