@@ -1,11 +1,13 @@
 // backend/server.js
 require('dotenv').config(); // MUST BE AT THE VERY TOP! Loads the OpenAI key first.
-
+ 
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcryptjs'); // <-- Add bcrypt to hash passwords
 const db = require('./models');
-
+const { User } = require('./models'); // <-- Import User model
+ 
 // Route imports
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
@@ -14,45 +16,68 @@ const therapistsRouter = require('./routes/therapists');
 const bookingRoutes = require('./routes/booking');
 const availabilityRoutes = require('./routes/availability');
 const chatbot = require('./routes/chatbot');
-
+ 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Configure CORS to accept requests from your frontend
+ 
+// Configure CORS
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://smart-booking-system-8cgy.onrender.com'], // or whatever port your frontend runs on
+  origin: [
+    'http://localhost:5173',
+    'https://smart-booking-system-8cgy.onrender.com'
+  ],
   credentials: true
 }));
 app.use(bodyParser.json());
-
-// Auth Routes
+ 
+// Routes
 app.use('/api/auth', authRoutes);
-
-// Admin & Therapist Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/therapists', therapistsRouter);
-
-// User Routes
 app.use('/api/users', userRoutes);
-
-// Booking & Availability Routes
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/availability', availabilityRoutes);
-
-// Chatbot Route 
 app.use('/api/chat', chatbot);
-
+ 
 // Base test route
 app.get('/', (req, res) => res.send('Server is running'));
-
-// Sync DB and start server
+ 
+// Function to ensure superuser exists
+const ensureSuperUser = async () => {
+  try {
+    const existing = await User.findOne({ where: { email: "super@system.com" } });
+    if (!existing) {
+      const hashedPassword = await bcrypt.hash("Super123!", 10);
+      await User.create({
+        name: "Main Superuser",
+        email: "super@system.com",
+        password: hashedPassword,
+        idNumber: "9999999999999",
+        role: "SUPERUSER",
+        isStaff: true,
+        isSuperUser: true,
+        isActive: true
+      });
+      console.log("👑 Superuser created!");
+    } else {
+      console.log("👑 Superuser already exists!");
+    }
+  } catch (error) {
+    console.error("Failed to create superuser:", error);
+  }
+};
+ 
+// Sync DB, ensure superuser, and start server
 const startServer = async () => {
   try {
     await db.sequelize.sync();
     console.log('Database synced');
+ 
+    await ensureSuperUser(); // <-- create superuser if missing
+ 
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (err) {
-    console.error('Failed to sync DB:', err);
+    console.error('Failed to sync DB or start server:', err);
   }
 };
  
