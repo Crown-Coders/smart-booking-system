@@ -1,25 +1,53 @@
 {
+
   "name": "backend",
+
   "version": "1.0.0",
+
   "main": "index.js",
+
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+
+    "start": "node server.js",
+
+    "create-superuser": "node createSuperUser.js",
+
+    "test": "echo \"Error: no test specified\" && exit 1"
+
   },
+
   "keywords": [],
+
   "author": "",
+
   "license": "ISC",
+
   "dependencies": {
+
     "bcrypt": "^6.0.0",
+
     "bcryptjs": "^3.0.3",
+
     "cors": "^2.8.6",
+
     "dotenv": "^17.3.1",
+
     "express": "^5.2.1",
+
     "groq-sdk": "^0.37.0",
+
     "jsonwebtoken": "^9.0.3",
+
     "pg": "^8.20.0",
+
     "sequelize": "^6.37.7",
+
     "sib-api-v3-sdk": "^8.5.0",
+
     "sqlite3": "^5.1.7"
+
   }
+
 }
+
+ 
