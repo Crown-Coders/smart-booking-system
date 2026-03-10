@@ -240,13 +240,13 @@ function UserDashboard() {
 
             <div key={therapist.id} className="therapist-card">
 
-                <img
-            src={therapist.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random()*70)}`}
-            alt={therapist.user?.name}
-            onError={(e) => {
-              e.target.src = `https://i.pravatar.cc/150?img=${Math.floor(Math.random()*70)}`;
-            }}
-          />
+            <img
+  src={therapist.image ? therapist.image : "https://i.pravatar.cc/150?img=12"}
+  alt={therapist.user?.name}
+  onError={(e) => {
+    e.target.src = "https://i.pravatar.cc/150?img=12";
+  }}
+/>
 
               <div className="therapist-body">
 
