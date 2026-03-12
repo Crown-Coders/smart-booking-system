@@ -124,6 +124,10 @@ function Navbar({ showSidebarToggle, onToggleSidebar, isAuthenticated, onLogout 
         <div className="nav-links">
           <NavLink to="/" className="nav-link" end>Home</NavLink>
 
+          {!isAuthenticated && (
+            <NavLink to="/services" className="nav-link">Services</NavLink>
+          )}
+
           {isAuthenticated ? (
             <>
               <NavLink to="/dashboard" className="nav-link">Dashboard</NavLink>
