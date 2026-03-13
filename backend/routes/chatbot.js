@@ -81,17 +81,29 @@ async function executeFunctionCall(functionName, args) {
   }
   return "Unknown function";
 }
-
+async function callLLM(messages, tools) {
+  return groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages,
+    tools,
+    tool_choice: "auto",
+    temperature: 0.6,
+    max_tokens: 400,
+    frequency_penalty: 0.7,
+    presence_penalty: 0.6
+  });
+}
 /**
  * --- 3. MAIN CHAT ROUTE ---
  */
 router.post("/", async (req, res) => {
   try {
-    const { history } = req.body;
-    const authHeader = req.headers.authorization;
+    const { history } = req.body;               // ✅ get history from body
+    const authHeader = req.headers.authorization; // ✅ get auth header
 
-    //   history exists here
-    const userWantsTherapist = history.some(m =>
+    const safeHistory = Array.isArray(history) ? history : [];
+
+    const userWantsTherapist = safeHistory.some(m =>
       m.role === "user" &&
       /therapist|counsel|psychologist|book|appointment/i.test(m.content)
     );
@@ -173,16 +185,8 @@ ${therapistData.join("\n")}
       ...(history || [])
     ];
     // API Call to Groq
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant", 
-      messages: messages,
-      tools: tools,
-      tool_choice: "auto",
-      temperature: 0.6,
-      max_tokens: 400,
-      frequency_penalty: 0.7, // Helps prevent the double-response bug
-      presence_penalty: 0.6 // restriction because LLaMA models still like to be helpful to a fault.
-    });
+    //This allows you to stub callLLM in tests
+    const completion = await callLLM(messages, tools);
 
     const responseMessage = completion.choices[0].message;
 
@@ -191,9 +195,16 @@ ${therapistData.join("\n")}
       messages.push(responseMessage); // Required protocol step
 
       for (const toolCall of responseMessage.tool_calls) {
+        let parsedArgs = {};
+        try {
+          parsedArgs = JSON.parse(toolCall.function.arguments || "{}");
+        } catch (e) {
+          parsedArgs = {};
+        }
+
         const functionResponse = await executeFunctionCall(
           toolCall.function.name,
-          JSON.parse(toolCall.function.arguments)
+          parsedArgs
         );
 
         messages.push({
@@ -220,5 +231,6 @@ ${therapistData.join("\n")}
     res.status(500).json({ error: "I'm having a little trouble connecting right now." });
   }
 });
-
-module.exports = router;
+ module.exports = router;
+module.exports.executeFunctionCall = executeFunctionCall;
+module.exports.callLLM = callLLM;
