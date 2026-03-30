@@ -14,7 +14,7 @@ const adminRoutes = require('./routes/admin');
 const userRoutes = require("./routes/users");
 const therapistsRouter = require('./routes/therapists');
 const bookingRoutes = require('./routes/booking');
-const availabilityRoutes = require('./routes/availability');
+const availabilityRoutes = require("./routes/availability");
 const chatbot = require('./routes/chatbot');
  
 const app = express();
@@ -36,7 +36,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/therapists', therapistsRouter);
 app.use('/api/users', userRoutes);
 app.use('/api/bookings', bookingRoutes);
-app.use('/api/availability', availabilityRoutes);
+app.use("/api/availability-slots", availabilityRoutes);
 app.use('/api/chat', chatbot);
  
 // Base test route

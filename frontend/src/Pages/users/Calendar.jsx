@@ -1,29 +1,35 @@
 // src/components/Calendar.jsx
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import "./calendar.css";
 
 function Calendar() {
+  const location = useLocation();
+  const selectedTherapistFromState = location.state?.therapist;
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [therapists, setTherapists] = useState([]);
-  const [availableSlots, setAvailableSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [selectionStep, setSelectionStep] = useState('start'); // 'start' or 'end'
+
+  // Therapist selection
+  const [therapist, setTherapist] = useState(selectedTherapistFromState || null);
+  const [therapists, setTherapists] = useState([]);
 
   const [bookingData, setBookingData] = useState({
-    therapistId: "",
-    slotId: "",
+    therapistId: selectedTherapistFromState?.id || "",
     date: "",
     startTime: "",
     endTime: "",
     description: ""
   });
 
-  /** -------------------- FETCH USER & THERAPISTS -------------------- */
+  /** -------------------- FETCH CURRENT USER -------------------- */
   useEffect(() => {
     fetchCurrentUser();
-    fetchTherapists();
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -40,29 +46,51 @@ function Calendar() {
     }
   };
 
-  const fetchTherapists = async () => {
+  /** -------------------- FETCH ALL THERAPISTS IF NONE SELECTED -------------------- */
+  useEffect(() => {
+    if (!therapist) {
+      fetch(`${import.meta.env.VITE_API_URL}/api/therapists`)
+        .then(res => res.json())
+        .then(data => setTherapists(data))
+        .catch(err => console.error(err));
+    }
+  }, [therapist]);
+
+  /** -------------------- FETCH BOOKED SLOTS -------------------- */
+  useEffect(() => {
+    if (therapist && selectedDate) {
+      fetchBookedSlots();
+    }
+  }, [therapist, selectedDate]);
+
+  const fetchBookedSlots = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`);
-      if (!res.ok) throw new Error("Failed to fetch therapists");
-      const data = await res.json();
-      setTherapists(data);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/availability-slots?therapistId=${therapist.id}&date=${selectedDate}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setBookedSlots(data.slots || []);
+      }
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
-
-  /** -------------------- STATIC TIME SLOTS -------------------- */
-  const generateStaticSlots = () => {
+  /** -------------------- TIME SLOTS -------------------- */
+  const generateTimeSlots = () => {
     const slots = [];
     let hour = 8;
-    let minute = 30;
-    let idCounter = 1;
+    let minute = 0;
 
-    while (hour < 16 || (hour === 16 && minute === 0)) {
+    while (hour < 17) {
+      const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
       slots.push({
-        id: idCounter++,
-        time: `${String(hour).padStart(2, "0")}:${minute === 0 ? "00" : minute}`,
-        isBooked: false,
+        time: timeString,
+        display: new Date(`2000-01-01T${timeString}`)
+          .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
       });
       minute += 30;
       if (minute === 60) {
@@ -73,34 +101,15 @@ function Calendar() {
     return slots;
   };
 
-  /** -------------------- FETCH AVAILABLE SLOTS -------------------- */
-  const fetchAvailableSlots = async (therapistId) => {
-    if (!therapistId) return;
-    setLoading(true);
-    try {
-      const allSlots = generateStaticSlots();
+  const allTimeSlots = generateTimeSlots();
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/bookings/available/${therapistId}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const bookedSlotIds = data.bookedSlotIds || [];
-        const slotsWithStatus = allSlots.map((slot) => ({
-          ...slot,
-          isBooked: bookedSlotIds.includes(slot.id),
-        }));
-        setAvailableSlots(slotsWithStatus);
-      } else {
-        setAvailableSlots(allSlots);
-      }
-    } catch (err) {
-      console.error(err);
-      setAvailableSlots(allSlots);
-    } finally {
-      setLoading(false);
-    }
-  };
+  /** -------------------- CHECK SLOT AVAILABILITY -------------------- */
+  const isSlotAvailable = (time) => {
+  // Block slot if **any slot (reserved or booked) covers this time**
+  return !bookedSlots.some(slot =>
+    time >= slot.startTime && time < slot.endTime
+  );
+};
 
   /** -------------------- BOOKING -------------------- */
   const calculatePrice = (startTime, endTime) => {
@@ -111,82 +120,108 @@ function Calendar() {
     return hours * 800;
   };
 
-const handleBooking = async () => {
-  if (!user) return alert("Please log in to book an appointment");
-  if (!bookingData.therapistId || (!bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)))
-    return alert("Select therapist and time slot");
+  const handleSlotClick = (slot) => {
+    if (!isSlotAvailable(slot.time)) {
+      alert("This time slot is already booked");
+      return;
+    }
 
-  if (bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)) {
-    const slot = availableSlots.find((s) => s.id === bookingData.slotId);
-    if (slot) {
-      setBookingData((prev) => ({
+    if (!bookingData.therapistId) {
+      return alert("Please select a therapist first");
+    }
+
+    if (selectionStep === 'start') {
+      setBookingData(prev => ({
         ...prev,
         startTime: slot.time,
-        endTime: new Date(new Date(`2000-01-01T${slot.time}`).getTime() + 30 * 60 * 1000)
-          .toTimeString()
-          .slice(0, 5),
+        endTime: ""
       }));
+      setSelectionStep('end');
+    } else {
+      if (slot.time <= bookingData.startTime) {
+        alert("End time must be after start time");
+        return;
+      }
+
+      // Check all slots in range
+      const startIndex = allTimeSlots.findIndex(s => s.time === bookingData.startTime);
+      const endIndex = allTimeSlots.findIndex(s => s.time === slot.time);
+      for (let i = startIndex; i <= endIndex; i++) {
+        if (!isSlotAvailable(allTimeSlots[i].time)) {
+          alert("Cannot select this range - some slots in between are already booked");
+          return;
+        }
+      }
+
+      setBookingData(prev => ({
+        ...prev,
+        endTime: slot.time
+      }));
+      setSelectionStep('start');
     }
-  }
+  };
 
-  try {
-    setLoading(true);
-    const token = localStorage.getItem("token");
-    const payload = {
-      userId: user.id,
-      therapistId: bookingData.therapistId,
-      bookingDate: bookingData.date,
-      startTime: bookingData.startTime,
-      endTime: bookingData.endTime,
-      description: bookingData.description,
-      price: calculatePrice(bookingData.startTime, bookingData.endTime),
-    };
-
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || "Booking failed");
+  const handleBooking = async () => {
+    if (!user || !bookingData.therapistId || !bookingData.startTime || !bookingData.endTime) {
+      return alert("Please complete all booking details.");
     }
 
-      const data = await res.json();
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
 
+      const bookingPayload = {
+        userId: user.id,
+        therapistId: therapist.id,
+        bookingDate: selectedDate,
+        startTime: bookingData.startTime,
+        endTime: bookingData.endTime,
+        description: bookingData.description,
+        price: calculatePrice(bookingData.startTime, bookingData.endTime),
+      };
+
+      const bookingRes = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bookingPayload),
+      });
+
+      if (!bookingRes.ok) {
+        const errorData = await bookingRes.json();
+        throw new Error(errorData.error || "Booking failed");
+      }
+
+      const data = await bookingRes.json();
+
+      // Redirect to payment
       const payfastRes = await fetch(
         `${import.meta.env.VITE_API_URL}/api/bookings/payfast/${data.booking.id}`,
         { method: "POST" }
       );
 
       const { url } = await payfastRes.json();
-
       window.location.href = url;
-      ; // redirect to PayFast sandbox
 
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
-
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetBookingForm = () => {
     setBookingData({
-      therapistId: "",
-      slotId: "",
+      therapistId: therapist?.id || "",
       date: "",
       startTime: "",
       endTime: "",
       description: "",
     });
-    setAvailableSlots([]);
+    setSelectionStep('start');
   };
 
   /** -------------------- HANDLERS -------------------- */
@@ -196,24 +231,8 @@ const handleBooking = async () => {
     today.setHours(0, 0, 0, 0);
     if (new Date(dateKey) < today) return alert("Cannot select past dates");
     setSelectedDate(dateKey);
-    setBookingData((prev) => ({ ...prev, date: dateKey }));
+    setBookingData(prev => ({ ...prev, date: dateKey }));
     setShowBookingModal(true);
-  };
-
-  const handleTherapistChange = (e) => {
-    const therapistId = e.target.value;
-    setBookingData((prev) => ({
-      ...prev,
-      therapistId,
-      slotId: "",
-      startTime: "",
-      endTime: "",
-    }));
-    fetchAvailableSlots(therapistId);
-  };
-
-  const handleSlotSelect = (slot) => {
-    setBookingData((prev) => ({ ...prev, slotId: slot.id }));
   };
 
   /** -------------------- CALENDAR -------------------- */
@@ -233,7 +252,6 @@ const handleBooking = async () => {
   const goToNextMonth = () => setCurrentDate(new Date(year, month+1,1));
   const goToToday = () => setCurrentDate(new Date());
 
-  /** -------------------- JSX -------------------- */
   return (
     <>
       <div className="soft-calendar">
@@ -273,7 +291,9 @@ const handleBooking = async () => {
         <div className="modal-overlay" onClick={() => {setShowBookingModal(false); resetBookingForm();}}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Book Appointment</h2>
+              <h2>
+                {therapist ? `Book with Dr. ${therapist.user.name}` : "Select a Therapist"}
+              </h2>
               <button onClick={() => {setShowBookingModal(false); resetBookingForm();}}>×</button>
             </div>
 
@@ -281,69 +301,121 @@ const handleBooking = async () => {
               {new Date(selectedDate).toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
             </div>
 
-            <div className="form-group">
-              <label>Select Therapist</label>
-              <select value={bookingData.therapistId} onChange={handleTherapistChange}>
-                <option value="">Choose a therapist</option>
-                {therapists.map(t => <option key={t.id} value={t.id}>{t.user?.name} - {t.specialization}</option>)}
-              </select>
-            </div>
-
-            {bookingData.therapistId && (
-              <>
-                <div className="form-group">
-                  <label>Available Slots</label>
-                  {loading ? <div>Loading...</div> : (
-                    <div className="time-slots">
-                      {availableSlots.map(slot => (
-                        <button key={slot.id} disabled={slot.isBooked}
-                          className={`${slot.isBooked ? "booked" : ""} ${bookingData.slotId===slot.id?"selected":""}`}
-                          onClick={() => handleSlotSelect(slot)}>
-                          {new Date(`2000-01-01T${slot.time}`).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true})}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Start/End Time Dropdown */}
-                <div className="form-group">
-                  <label>Start Time</label>
-                  <select value={bookingData.startTime} onChange={e=>setBookingData(prev=>({...prev,startTime:e.target.value}))}>
-                    <option value="">Select start time</option>
-                    {availableSlots.filter(s=>!s.isBooked).map(s=>(
-                      <option key={s.id} value={s.time}>{s.time}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>End Time</label>
-                  <select value={bookingData.endTime} onChange={e=>setBookingData(prev=>({...prev,endTime:e.target.value}))}>
-                    <option value="">Select end time</option>
-                    {availableSlots.filter(s=>!s.isBooked && s.time>bookingData.startTime).map(s=>(
-                      <option key={s.id} value={s.time}>{s.time}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {bookingData.startTime && bookingData.endTime && (
-                  <div>Total Price: R{calculatePrice(bookingData.startTime, bookingData.endTime)}</div>
-                )}
-              </>
+            {!therapist && (
+              <div className="form-group">
+                <label>Select a Therapist</label>
+                <select
+                  value={bookingData.therapistId}
+                  onChange={(e) => {
+                    const selected = therapists.find(t => t.id === Number(e.target.value)); // convert to number
+                    setTherapist(selected);
+                    setBookingData(prev => ({ ...prev, therapistId: selected?.id || "" }));
+                  }}
+                >
+                  <option value="">-- Choose a Therapist --</option>
+                  {therapists.map(t => (
+                    <option key={t.id} value={t.id}>
+                      Dr. {t.user.name} - {t.specialization}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
+            {therapist && (
+              <div className="therapist-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#f0f2f0', borderRadius: '8px' }}>
+                <strong>{therapist.specialization}</strong> • {therapist.yearsOfExperience} years experience
+              </div>
+            )}
+
+            {/* Time Slots */}
             <div className="form-group">
-              <label>Description</label>
-              <textarea value={bookingData.description} onChange={e=>setBookingData(prev=>({...prev,description:e.target.value}))}/>
+              <label>Select Time Slots</label>
+              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                {selectionStep === 'start' ? 'Click to select start time' : 'Click to select end time'}
+              </p>
+              {loading ? <div>Loading...</div> : (
+                <div className="time-slots" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                  {allTimeSlots.map(slot => {
+                    const isAvailable = isSlotAvailable(slot.time);
+                    const isStart = bookingData.startTime === slot.time;
+                    const isEnd = bookingData.endTime === slot.time;
+                    const isInRange = bookingData.startTime && bookingData.endTime && 
+                                     slot.time > bookingData.startTime && slot.time < bookingData.endTime;
+
+                    return (
+                      <button
+                        key={slot.time}
+                        disabled={!isAvailable || !bookingData.therapistId}
+                        className={`time-slot 
+                          ${!isAvailable ? "booked" : ""} 
+                          ${isStart ? "start-selected" : ""}
+                          ${isEnd ? "end-selected" : ""}
+                          ${isInRange ? "in-range" : ""}
+                        `}
+                        onClick={() => handleSlotClick(slot)}
+                        style={{
+                          backgroundColor: !isAvailable ? '#f5f5f5' : (isStart ? '#002324' : (isEnd ? '#a1ad95' : (isInRange ? '#e5ddde' : 'white'))),
+                          color: !isAvailable ? '#a1ad95' : (isStart ? 'white' : '#002324'),
+                          border: !isAvailable ? '1px solid #e5ddde' : (isStart || isEnd ? '2px solid #002324' : '1px solid #e5ddde'),
+                          cursor: !isAvailable ? 'not-allowed' : 'pointer',
+                          textDecoration: !isAvailable ? 'line-through' : 'none'
+                        }}
+                      >
+                        {slot.display}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            <div>
-              <button onClick={()=>{setShowBookingModal(false); resetBookingForm();}}>Cancel</button>
-              <button onClick={handleBooking} disabled={!bookingData.therapistId || (!bookingData.slotId && (!bookingData.startTime || !bookingData.endTime)) || loading}>
-                {loading?"Booking...":"Book"}
+            {/* Selected Times */}
+            {bookingData.startTime && (
+              <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#f0f2f0', borderRadius: '8px' }}>
+                <strong>Start:</strong> {new Date(`2000-01-01T${bookingData.startTime}`).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true})}
+              </div>
+            )}
+            {bookingData.endTime && (
+              <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#f0f2f0', borderRadius: '8px' }}>
+                <strong>End:</strong> {new Date(`2000-01-01T${bookingData.endTime}`).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true})}
+              </div>
+            )}
+
+            {bookingData.startTime && bookingData.endTime && (
+              <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#002324', color: 'white', borderRadius: '8px', textAlign: 'center' }}>
+                <strong>Total: R{calculatePrice(bookingData.startTime, bookingData.endTime)}</strong>
+              </div>
+            )}
+
+            {/* Description */}
+            <div className="form-group">
+              <label>Description (Optional)</label>
+              <textarea 
+                value={bookingData.description} 
+                onChange={e => setBookingData(prev => ({...prev, description: e.target.value}))}
+                placeholder="Brief description of your appointment reason..."
+                rows="3"
+              />
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button 
+                style={{ flex: 1, padding: '0.5rem', background: 'transparent', border: '1px solid #002324', borderRadius: '5px', cursor: 'pointer', color: 'black' }}
+                onClick={()=>{setShowBookingModal(false); resetBookingForm();}}
+              >
+                Cancel
+              </button>
+              <button 
+                style={{ flex: 1, padding: '0.5rem', background: '#002324', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                onClick={handleBooking} 
+                disabled={!bookingData.startTime || !bookingData.endTime || !bookingData.therapistId || loading}
+              >
+                {loading?"Processing...":"Book & Pay"}
               </button>
             </div>
+
           </div>
         </div>
       )}
