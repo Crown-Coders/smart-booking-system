@@ -1,52 +1,59 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarDays, Eye, Timer } from "lucide-react";
 import "./UpcomingSessions.css";
 
 const UpcomingSessions = () => {
-  const upcomingSessions = useMemo(
-    () => [
-      {
-        id: 1,
-        client: "John Doe",
-        date: "2026-03-10",
-        time: "10:00 AM",
-        mode: "Online",
-        duration: "60 min",
-        issue: "Anxiety management",
-        notes: "First follow-up after intake.",
-      },
-      {
-        id: 2,
-        client: "Jane Smith",
-        date: "2026-03-11",
-        time: "2:00 PM",
-        mode: "In-person",
-        duration: "45 min",
-        issue: "Stress and burnout",
-        notes: "Review weekly coping plan.",
-      },
-      {
-        id: 3,
-        client: "Thabo Mokoena",
-        date: "2026-03-12",
-        time: "9:30 AM",
-        mode: "Online",
-        duration: "60 min",
-        issue: "Depression support",
-        notes: "Progress check on sleep routine.",
-      },
-    ],
-    []
-  );
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
 
-  const [selectedId, setSelectedId] = useState(upcomingSessions[0]?.id ?? null);
+  // Fetch upcoming sessions from backend
+  useEffect(() => {
+  const fetchSessions = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      // ✅ STEP 1
+      const therapistRes = await fetch(
+        `http://localhost:5000/api/therapists/by-user/${user.id}`
+      );
+
+      const therapistData = await therapistRes.json();
+      const therapistId = therapistData.therapistId;
+
+      // ✅ STEP 2
+      const response = await fetch(
+        `http://localhost:5000/api/bookings/therapist/${therapistId}`
+      );
+
+      const data = await response.json();
+
+      const today = new Date().toISOString().split("T")[0];
+
+      const upcoming = data.filter(
+        (b) => new Date(b.bookingDate) >= new Date(today)
+      );
+
+      setUpcomingSessions(upcoming);
+
+      if (upcoming.length > 0) setSelectedId(upcoming[0].id);
+
+    } catch (error) {
+      console.error("Error fetching upcoming sessions:", error);
+    }
+  };
+
+  fetchSessions();
+}, []);
+
   const selectedSession = upcomingSessions.find((session) => session.id === selectedId);
 
   return (
     <section className="upcoming-sessions">
       <header className="upcoming-sessions__header">
         <h1 className="upcoming-sessions__title">Upcoming Sessions</h1>
-        <p className="upcoming-sessions__subtitle">Use the view icon to open complete details for each upcoming booking.</p>
+        <p className="upcoming-sessions__subtitle">
+          Use the view icon to open complete details for each upcoming booking.
+        </p>
       </header>
 
       <div className="upcoming-sessions__toolbar">
@@ -63,24 +70,34 @@ const UpcomingSessions = () => {
       <section className="upcoming-sessions__panel">
         <h2 className="upcoming-sessions__panel-title">Session List</h2>
         <div className="upcoming-sessions__grid">
-          {upcomingSessions.map((session) => (
-            <article key={session.id} className="upcoming-sessions__card">
-              <p className="upcoming-sessions__name">{session.client}</p>
-              <p className="upcoming-sessions__meta">
-                {session.date} | {session.time}
-              </p>
-              <p className="upcoming-sessions__meta">Mode: {session.mode}</p>
-              <button
-                type="button"
-                className="upcoming-sessions__view-btn"
-                onClick={() => setSelectedId(session.id)}
-                aria-label={`View details for ${session.client}`}
-                title="View session details"
-              >
-                <Eye size={16} />
-              </button>
-            </article>
-          ))}
+          {upcomingSessions.length > 0 ? (
+            upcomingSessions.map((session) => (
+              <article key={session.id} className="upcoming-sessions__card">
+                <p className="upcoming-sessions__name">
+  {session.client?.name || "Unknown"}
+</p>
+
+<p className="upcoming-sessions__meta">
+  {session.bookingDate} | {session.startTime} - {session.endTime}
+</p>
+
+<p className="upcoming-sessions__meta">
+  Status: {session.status}
+</p>
+                <button
+                  type="button"
+                  className="upcoming-sessions__view-btn"
+                  onClick={() => setSelectedId(session.id)}
+                  aria-label={`View details for ${session.clientName}`}
+                  title="View session details"
+                >
+                  <Eye size={16} />
+                </button>
+              </article>
+            ))
+          ) : (
+            <p className="upcoming-sessions__empty">No upcoming sessions scheduled.</p>
+          )}
         </div>
       </section>
 
@@ -89,13 +106,13 @@ const UpcomingSessions = () => {
         {selectedSession ? (
           <div className="upcoming-sessions__details">
             <p className="upcoming-sessions__detail-text">
-              <strong>Client:</strong> {selectedSession.client}
+             <strong>Client:</strong> {selectedSession.client?.name}
             </p>
             <p className="upcoming-sessions__detail-text">
-              <strong>Date:</strong> {selectedSession.date}
+              <strong>Date:</strong> {selectedSession.bookingDate}
             </p>
             <p className="upcoming-sessions__detail-text">
-              <strong>Time:</strong> {selectedSession.time}
+              <strong>Time:</strong> {selectedSession.startTime} - {selectedSession.endTime}
             </p>
             <p className="upcoming-sessions__detail-text">
               <strong>Mode:</strong> {selectedSession.mode}

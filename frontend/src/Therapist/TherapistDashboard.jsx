@@ -1,79 +1,215 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./TherapistDashboard.css";
+
+const colors = {
+  deepTeal: "#002324",
+  sand: "#E5DDDE",
+  sage: "#A1AD95",
+  mint: "#EBFACF",
+  white: "#FFFFFF",
+};
+
+const styles = {
+  content: {
+    padding: "2rem 2.5rem",
+  },
+
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "1.25rem",
+    marginBottom: "2rem",
+  },
+
+  statCard: (accent) => ({
+    backgroundColor: colors.white,
+    borderRadius: "12px",
+    padding: "1.5rem",
+    border: `1px solid ${colors.sand}`,
+    borderTop: `4px solid ${accent}`,
+    boxShadow: "0 2px 8px rgba(0,35,36,0.05)",
+    cursor: "pointer", // makes card clickable
+    transition: "0.2s",
+  }),
+
+  statLabel: {
+    fontSize: "0.7rem",
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: colors.sage,
+    marginBottom: "0.5rem",
+  },
+
+  statValue: (color) => ({
+    fontSize: "2.4rem",
+    fontWeight: "700",
+    color: color || colors.deepTeal,
+  }),
+
+  statSub: {
+    fontSize: "0.75rem",
+    color: colors.sage,
+    marginTop: "0.25rem",
+  },
+
+  sessionCard: {
+    background: "#fff",
+    padding: "1rem",
+    borderRadius: "10px",
+    border: `1px solid ${colors.sand}`,
+    marginBottom: "1rem",
+  },
+};
 
 const TherapistDashboard = () => {
-  const upcomingRef = useRef(null);
   const navigate = useNavigate();
 
-  const [isAvailable, setIsAvailable] = useState(true);
+  const [bookings, setBookings] = useState([]);
+  const [therapistName, setTherapistName] = useState("");
 
-  const upcomingSessions = [
-    { id: 1, client: "John Doe", date: "2025-03-10", time: "10:00 AM" },
-    { id: 2, client: "Jane Smith", date: "2025-03-11", time: "2:00 PM" },
-  ];
+  useEffect(() => {
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  if (!user || !user.id) {
+    console.error("No logged-in therapist found");
+    return;
+  }
+
+  setTherapistName(user.name);
+
+  const fetchBookings = async () => {
+  try {
+    // 🔥 STEP 1: get therapistId using userId
+    const therapistRes = await fetch(
+      `http://localhost:5000/api/therapists/by-user/${user.id}`
+    );
+
+    if (!therapistRes.ok) throw new Error("Failed to fetch therapist ID");
+
+    const therapistData = await therapistRes.json();
+
+    const therapistId = therapistData.therapistId;
+
+    console.log("Therapist ID:", therapistId);
+
+    // 🔥 STEP 2: fetch bookings using therapistId
+    const bookingsRes = await fetch(
+      `http://localhost:5000/api/bookings/therapist/${therapistId}`
+    );
+
+    if (!bookingsRes.ok) throw new Error("Failed to fetch bookings");
+
+    const bookingsData = await bookingsRes.json();
+
+    console.log("Fetched bookings:", bookingsData);
+
+    setBookings(bookingsData);
+
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+  }
+};
+
+  fetchBookings();
+}, []);
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const upcoming = bookings.filter(
+  (b) => new Date(b.bookingDate) >= new Date(today)
+);
+
+console.log("Upcoming sessions:", upcoming); // ✅ DEBUG LINE
+
+const history = bookings.filter(
+  (b) => new Date(b.bookingDate) < new Date(today)
+);
 
   return (
-    <div className="therapist-dashboard">
-      <div className="therapist-dashboard__header">
-        <div className="therapist-dashboard__intro-card">
-          <h1>Therapist Dashboard</h1>
-          <p>Welcome back! Here's an overview of your activity.</p>
-        </div>
+    <div style={styles.content}>
+      <h1>Welcome, {therapistName}</h1>
+      <p>Here's your activity overview.</p>
 
-        <button onClick={() => navigate("/profile")} className="therapist-dashboard__profile-button">
-          View Profile
-        </button>
-      </div>
+      {/* CLICKABLE STAT CARDS */}
 
-      <div className="therapist-dashboard__cards">
-        <div className="therapist-dashboard__card therapist-dashboard__card--clickable" onClick={() => navigate("/total-sessions")}>
-          <h3>Total Sessions</h3>
-          <p>24</p>
-        </div>
-
+      <div style={styles.statsGrid}>
+        
+        {/* TOTAL SESSIONS */}
         <div
-          className="therapist-dashboard__card therapist-dashboard__card--clickable"
+          style={styles.statCard(colors.deepTeal)}
+          onClick={() => navigate("/total-sessions")}
+        >
+          <div style={styles.statLabel}>Total Sessions</div>
+          <div style={styles.statValue(colors.deepTeal)}>
+            {bookings.length}
+          </div>
+          <div style={styles.statSub}>Click to view all sessions</div>
+        </div>
+
+        {/* UPCOMING SESSIONS */}
+        <div
+          style={styles.statCard("#276749")}
           onClick={() => navigate("/upcoming-sessions")}
         >
-          <h3>Upcoming Sessions</h3>
-          <p>{upcomingSessions.length}</p>
+          <div style={styles.statLabel}>Upcoming Sessions</div>
+          <div style={styles.statValue("#276749")}>
+            {upcoming.length}
+          </div>
+          <div style={styles.statSub}>Click to view upcoming bookings</div>
         </div>
 
-        <div className="therapist-dashboard__card therapist-dashboard__card--clickable" onClick={() => navigate("/booking-history")}>
-          <h3>Booking History</h3>
-          <p>View all sessions</p>
-        </div>
-
-        <div className="therapist-dashboard__card">
-          <h3>Status</h3>
-          <p className={`therapist-dashboard__status-value ${isAvailable ? "therapist-dashboard__status-value--available" : "therapist-dashboard__status-value--unavailable"}`}>
-            {isAvailable ? "Available" : "Not Available"}
-          </p>
-
-          <button onClick={() => setIsAvailable(!isAvailable)} className="therapist-dashboard__status-button">
-            Toggle Status
-          </button>
+        {/* BOOKING HISTORY */}
+        <div
+          style={styles.statCard("#B7791F")}
+          onClick={() => navigate("/booking-history")}
+        >
+          <div style={styles.statLabel}>Booking History</div>
+          <div style={styles.statValue("#B7791F")}>
+            {history.length}
+          </div>
+          <div style={styles.statSub}>Click to view past bookings</div>
         </div>
       </div>
 
-      <h2 ref={upcomingRef} className="therapist-dashboard__upcoming-title">
-        Upcoming Sessions
-      </h2>
+      {/* UPCOMING SESSION PREVIEW */}
 
-      {upcomingSessions.map((session) => (
-        <div key={session.id} className="therapist-dashboard__session">
-          <p>
-            <strong>Client:</strong> {session.client}
-          </p>
-          <p>
-            <strong>Date:</strong> {session.date}
-          </p>
-          <p>
-            <strong>Time:</strong> {session.time}
-          </p>
-        </div>
-      ))}
+<h2>Upcoming Sessions</h2>
+
+{upcoming.length > 0 ? (
+  upcoming.map((session) => (
+    <div key={session.id} style={styles.sessionCard}>
+      <p>
+        <strong>Client:</strong> {session.client?.name || "N/A"}
+      </p>
+      <p>
+        <strong>Date:</strong> {session.bookingDate}
+      </p>
+      <p>
+        <strong>Time:</strong> {session.startTime} - {session.endTime}
+      </p>
+      <p>
+        <strong>Status:</strong> {session.status}
+      </p>
+    </div>
+  ))
+) : (
+  <p>No upcoming sessions</p>
+)}
+
+      <button
+        onClick={() => navigate("/upcoming-sessions")}
+        style={{
+          marginTop: "1rem",
+          padding: "10px 18px",
+          borderRadius: "8px",
+          border: "none",
+          background: colors.deepTeal,
+          color: colors.mint,
+          cursor: "pointer",
+        }}
+      >
+        View All Sessions
+      </button>
     </div>
   );
 };
