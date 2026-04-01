@@ -8,20 +8,42 @@ const UpcomingSessions = () => {
 
   // Fetch upcoming sessions from backend
   useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        const response = await fetch("/api/bookings/therapist/upcoming"); // Adjust backend endpoint
-        if (!response.ok) throw new Error("Failed to fetch upcoming sessions");
-        const data = await response.json();
-        setUpcomingSessions(data);
-        if (data.length > 0) setSelectedId(data[0].id);
-      } catch (error) {
-        console.error("Error fetching upcoming sessions:", error);
-      }
-    };
+  const fetchSessions = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
 
-    fetchSessions();
-  }, []);
+      // ✅ STEP 1
+      const therapistRes = await fetch(
+        `http://localhost:5000/api/therapists/by-user/${user.id}`
+      );
+
+      const therapistData = await therapistRes.json();
+      const therapistId = therapistData.therapistId;
+
+      // ✅ STEP 2
+      const response = await fetch(
+        `http://localhost:5000/api/bookings/therapist/${therapistId}`
+      );
+
+      const data = await response.json();
+
+      const today = new Date().toISOString().split("T")[0];
+
+      const upcoming = data.filter(
+        (b) => new Date(b.bookingDate) >= new Date(today)
+      );
+
+      setUpcomingSessions(upcoming);
+
+      if (upcoming.length > 0) setSelectedId(upcoming[0].id);
+
+    } catch (error) {
+      console.error("Error fetching upcoming sessions:", error);
+    }
+  };
+
+  fetchSessions();
+}, []);
 
   const selectedSession = upcomingSessions.find((session) => session.id === selectedId);
 
@@ -51,11 +73,17 @@ const UpcomingSessions = () => {
           {upcomingSessions.length > 0 ? (
             upcomingSessions.map((session) => (
               <article key={session.id} className="upcoming-sessions__card">
-                <p className="upcoming-sessions__name">{session.clientName}</p>
-                <p className="upcoming-sessions__meta">
-                  {session.date} | {session.time}
-                </p>
-                <p className="upcoming-sessions__meta">Mode: {session.mode}</p>
+                <p className="upcoming-sessions__name">
+  {session.client?.name || "Unknown"}
+</p>
+
+<p className="upcoming-sessions__meta">
+  {session.bookingDate} | {session.startTime} - {session.endTime}
+</p>
+
+<p className="upcoming-sessions__meta">
+  Status: {session.status}
+</p>
                 <button
                   type="button"
                   className="upcoming-sessions__view-btn"
@@ -78,13 +106,13 @@ const UpcomingSessions = () => {
         {selectedSession ? (
           <div className="upcoming-sessions__details">
             <p className="upcoming-sessions__detail-text">
-              <strong>Client:</strong> {selectedSession.clientName}
+             <strong>Client:</strong> {selectedSession.client?.name}
             </p>
             <p className="upcoming-sessions__detail-text">
-              <strong>Date:</strong> {selectedSession.date}
+              <strong>Date:</strong> {selectedSession.bookingDate}
             </p>
             <p className="upcoming-sessions__detail-text">
-              <strong>Time:</strong> {selectedSession.time}
+              <strong>Time:</strong> {selectedSession.startTime} - {selectedSession.endTime}
             </p>
             <p className="upcoming-sessions__detail-text">
               <strong>Mode:</strong> {selectedSession.mode}

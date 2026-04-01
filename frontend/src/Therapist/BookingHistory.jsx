@@ -6,20 +6,49 @@ const BookingHistory = () => {
   const [historyBookings, setHistoryBookings] = useState([]);
 
   useEffect(() => {
-    const fetchBookingHistory = async () => {
-      try {
-        const response = await fetch("/api/bookings/therapist/history"); // adjust if your route name is different
-        if (!response.ok) throw new Error("Failed to fetch booking history");
+  const fetchBookingHistory = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
 
-        const data = await response.json();
-        setHistoryBookings(data);
-      } catch (error) {
-        console.error("Error fetching booking history:", error);
+      if (!user?.id) {
+        console.error("No logged-in user found");
+        return;
       }
-    };
 
-    fetchBookingHistory();
-  }, []);
+      // ✅ STEP 1: get therapistId
+      const therapistRes = await fetch(
+        `http://localhost:5000/api/therapists/by-user/${user.id}`
+      );
+
+      if (!therapistRes.ok) throw new Error("Failed to fetch therapist ID");
+
+      const therapistData = await therapistRes.json();
+      const therapistId = therapistData.therapistId;
+
+      // ✅ STEP 2: fetch bookings using therapistId
+      const response = await fetch(
+        `http://localhost:5000/api/bookings/therapist/${therapistId}`
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch booking history");
+
+      const data = await response.json();
+
+      const today = new Date().toISOString().split("T")[0];
+
+      const history = data.filter(
+        (b) => new Date(b.bookingDate) < new Date(today)
+      );
+
+      setHistoryBookings(history);
+
+    } catch (error) {
+      console.error("Error fetching booking history:", error);
+    }
+  };
+
+  fetchBookingHistory();
+}, []);
 
   return (
     <section className="booking-history">
@@ -54,18 +83,23 @@ const BookingHistory = () => {
           {historyBookings.length > 0 ? (
             historyBookings.map((booking) => (
               <article key={booking.id} className="booking-history__card">
+                
+                {/* ✅ CLIENT NAME */}
                 <div className="booking-history__row">
-                  <p className="booking-history__name">{booking.clientName}</p>
-                  <span className="booking-history__status">{booking.status}</span>
+                  <p className="booking-history__name">
+                    {booking.client?.name || "Unknown Client"}
+                  </p>
+
+                  <span className="booking-history__status">
+                    {booking.status}
+                  </span>
                 </div>
 
+                {/* ✅ DATE + TIME */}
                 <p className="booking-history__meta">
-                  {booking.date} | {booking.time}
+                  {booking.bookingDate} | {booking.startTime} - {booking.endTime}
                 </p>
 
-                <p className="booking-history__meta">
-                  Mode: {booking.mode}
-                </p>
               </article>
             ))
           ) : (

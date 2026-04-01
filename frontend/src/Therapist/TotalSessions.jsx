@@ -6,29 +6,37 @@ const TotalSessions = () => {
   const [completedSessions, setCompletedSessions] = useState([]);
 
   useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        const therapistId = localStorage.getItem("userId");
+  const fetchSessions = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
 
-        const res = await fetch(
-          `http://localhost:5000/api/bookings/therapist/${therapistId}`
-        );
+      // ✅ STEP 1
+      const therapistRes = await fetch(
+        `http://localhost:5000/api/therapists/by-user/${user.id}`
+      );
 
-        const data = await res.json();
+      const therapistData = await therapistRes.json();
+      const therapistId = therapistData.therapistId;
 
-        // Filter only completed sessions
-        const completed = data.filter(
-          (booking) => booking.status === "completed"
-        );
+      // ✅ STEP 2
+      const res = await fetch(
+        `http://localhost:5000/api/bookings/therapist/${therapistId}`
+      );
 
-        setCompletedSessions(completed);
-      } catch (error) {
-        console.error("Error fetching sessions:", error);
-      }
-    };
+      const data = await res.json();
 
-    fetchSessions();
-  }, []);
+      // ✅ IMPORTANT: match your backend ENUM
+      const completed = data;
+
+      setCompletedSessions(completed);
+
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+    }
+  };
+
+  fetchSessions();
+}, []);
 
   return (
     <section className="total-sessions">

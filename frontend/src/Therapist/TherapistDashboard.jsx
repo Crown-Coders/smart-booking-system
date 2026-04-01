@@ -68,32 +68,62 @@ const TherapistDashboard = () => {
   const [therapistName, setTherapistName] = useState("");
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user"));
 
-    if (user) {
-      setTherapistName(user.name);
-    }
+  if (!user || !user.id) {
+    console.error("No logged-in therapist found");
+    return;
+  }
 
-    const fetchBookings = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:5000/api/bookings/therapist/${user.id}`
-        );
+  setTherapistName(user.name);
 
-        const data = await response.json();
-        setBookings(data);
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-      }
-    };
+  const fetchBookings = async () => {
+  try {
+    // 🔥 STEP 1: get therapistId using userId
+    const therapistRes = await fetch(
+      `http://localhost:5000/api/therapists/by-user/${user.id}`
+    );
 
-    if (user) fetchBookings();
-  }, []);
+    if (!therapistRes.ok) throw new Error("Failed to fetch therapist ID");
+
+    const therapistData = await therapistRes.json();
+
+    const therapistId = therapistData.therapistId;
+
+    console.log("Therapist ID:", therapistId);
+
+    // 🔥 STEP 2: fetch bookings using therapistId
+    const bookingsRes = await fetch(
+      `http://localhost:5000/api/bookings/therapist/${therapistId}`
+    );
+
+    if (!bookingsRes.ok) throw new Error("Failed to fetch bookings");
+
+    const bookingsData = await bookingsRes.json();
+
+    console.log("Fetched bookings:", bookingsData);
+
+    setBookings(bookingsData);
+
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+  }
+};
+
+  fetchBookings();
+}, []);
 
   const today = new Date().toISOString().split("T")[0];
 
-  const upcoming = bookings.filter((b) => b.bookingDate >= today);
-  const history = bookings.filter((b) => b.bookingDate < today);
+  const upcoming = bookings.filter(
+  (b) => new Date(b.bookingDate) >= new Date(today)
+);
+
+console.log("Upcoming sessions:", upcoming); // ✅ DEBUG LINE
+
+const history = bookings.filter(
+  (b) => new Date(b.bookingDate) < new Date(today)
+);
 
   return (
     <div style={styles.content}>
@@ -143,21 +173,28 @@ const TherapistDashboard = () => {
 
       {/* UPCOMING SESSION PREVIEW */}
 
-      <h2>Upcoming Sessions</h2>
+<h2>Upcoming Sessions</h2>
 
-      {upcoming.map((session) => (
-        <div key={session.id} style={styles.sessionCard}>
-          <p>
-            <strong>Date:</strong> {session.bookingDate}
-          </p>
-          <p>
-            <strong>Time:</strong> {session.startTime} - {session.endTime}
-          </p>
-          <p>
-            <strong>Status:</strong> {session.status}
-          </p>
-        </div>
-      ))}
+{upcoming.length > 0 ? (
+  upcoming.map((session) => (
+    <div key={session.id} style={styles.sessionCard}>
+      <p>
+        <strong>Client:</strong> {session.client?.name || "N/A"}
+      </p>
+      <p>
+        <strong>Date:</strong> {session.bookingDate}
+      </p>
+      <p>
+        <strong>Time:</strong> {session.startTime} - {session.endTime}
+      </p>
+      <p>
+        <strong>Status:</strong> {session.status}
+      </p>
+    </div>
+  ))
+) : (
+  <p>No upcoming sessions</p>
+)}
 
       <button
         onClick={() => navigate("/upcoming-sessions")}
