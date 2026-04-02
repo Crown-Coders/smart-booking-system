@@ -53,7 +53,7 @@ export default function Chatbot({ isOpen, onClose }) {
   //  NEW: Separate API call logic to handle history correctly
   const callChatAPI = async (history) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chatbot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
