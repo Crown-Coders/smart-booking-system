@@ -93,7 +93,7 @@ const MENU_BY_ROLE = {
     { name: "Dashboard", path: "/dashboard" },
     { name: "My Appointments", path: "/appointments" },
     { name: "Calendar", path: "/calendar" },
-    { name: "Messages", path: "/messages" },
+    { name: "Services", path: "/services" },
       // AI Chatbot removed – now accessible via floating button
   ],
 

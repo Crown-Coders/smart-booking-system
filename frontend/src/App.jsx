@@ -2,11 +2,13 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
- 
+
 // Layout components
 import Sidebar from "./components/layout/Sidebar";
 import Navbar from "./components/layout/Navbar";
-import Footer from "./components/layout/Footer"; 
+import Footer from "./components/layout/Footer";
+import PrivateRoute from "./components/layout/PrivateRoute";
+
 // AI Chatbot
 import AIChatbot from "./components/AI/Chatbot";
 import ChatbotButton from "./components/AI/ChatbotButton";
@@ -15,26 +17,25 @@ import ChatbotButton from "./components/AI/ChatbotButton";
 import Login from "./components/layout/Login";
 import Register from "./components/layout/Register";
 import LandingPage from "./components/layout/LandingPage";
- 
+
 // Therapist pages
 import TherapistDashboard from "./Therapist/TherapistDashboard";
 import Profile from "./Therapist/Profile";
 import TotalSessions from "./Therapist/TotalSessions";
 import UpcomingSessions from "./Therapist/UpcomingSessions";
 import BookingHistory from "./Therapist/BookingHistory";
- 
+
 // User pages
-import UserDashboard from './Pages/users/UserDashboard';
-import MyAppointments from './Pages/users/MyAppointments';
-import Calendar from './Pages/users/Calendar';
-import Messages from './Pages/users/Messages';
+import UserDashboard from "./Pages/users/UserDashboard";
+import MyAppointments from "./Pages/users/MyAppointments";
+import Calendar from "./Pages/users/Calendar";
+import Services from "./Pages/users/Services";
 import PaymentSuccess from "./Pages/PaymentSuccess";
 import PaymentCancel from "./Pages/PaymentCancel";
 
-
 // Admin pages
-import AdminDashboard from './Pages/AdminDashboard';
-import UsersPage from './Pages/UserPage';
+import AdminDashboard from "./Pages/AdminDashboard";
+import UsersPage from "./Pages/UserPage";
 
 // Helper to detect dashboard routes for showing sidebar
 const isDashboardRoute = (pathname) => {
@@ -42,7 +43,7 @@ const isDashboardRoute = (pathname) => {
     '/dashboard',
     '/appointments',
     '/calendar',
-    '/messages',
+    '/services',
     '/ai-chatbot',
     '/admin',
     '/therapist',
@@ -53,24 +54,26 @@ const isDashboardRoute = (pathname) => {
   ];
   return dashboardPaths.some(path => pathname.startsWith(path));
 };
- 
+
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
- //chatbot's open/close status
+  // Chatbot open/close status
   const [isChatOpen, setIsChatOpen] = useState(false);
   const toggleChat = () => setIsChatOpen(prev => !prev);
 
+  // Get user and auth info from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
- 
+  const token = localStorage.getItem("token");
+  const isAuthenticated = !!token;
+
   // Show navbar on all pages
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
   const showSidebar = !isAuthPage && isDashboardRoute(location.pathname);
- 
+
   // Check screen width on mount and resize
   useEffect(() => {
     const checkScreen = () => setIsMobile(window.innerWidth <= 768);
@@ -78,92 +81,95 @@ function AppLayout() {
     window.addEventListener("resize", checkScreen);
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
- 
-  // Check for existing token on app load
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
-  }, []);
- 
-  const shouldShiftContent = showSidebar && (isMobile ? sidebarOpen : true);
- 
+
+  const shouldShiftContent = showSidebar && isAuthenticated && (isMobile ? sidebarOpen : true);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setIsAuthenticated(false);
     navigate('/');
   };
- 
+
   const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
+    navigate('/dashboard');
   };
- 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-     
-      {/* Cleaned up Navbar logic so it only renders once */}
+      {/* Navbar */}
       <Navbar
-        showSidebarToggle={showSidebar}
+        showSidebarToggle={showSidebar && isAuthenticated}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
       />
- 
-      {showSidebar && (
+
+      {/* Sidebar (only visible if logged in) */}
+      {showSidebar && isAuthenticated && (
         <Sidebar
           userRole={user?.role}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
       )}
- 
+
+      {/* Main content */}
       <main
-        className={isAuthPage ? "login-fullscreen" : `content ${shouldShiftContent ? "sidebar-open" : ""}`}
-        style={{ flex: 1 }}
+        className={
+          isAuthPage
+            ? "login-fullscreen"
+            : `content ${shouldShiftContent ? "sidebar-open" : ""}`
+        }
       >
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
           <Route path="/register" element={<Register onRegisterSuccess={handleLoginSuccess} />} />
-          
+
           {/* Therapist routes */}
           <Route path="/therapist/dashboard" element={<TherapistDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/booking-history" element={<BookingHistory />} />
           <Route path="/total-sessions" element={<TotalSessions />} />
           <Route path="/upcoming-sessions" element={<UpcomingSessions />} />
- 
-          {/* Client routes only */}
+
+          {/* Client routes */}
           <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/appointments" element={<MyAppointments />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/messages" element={<Messages />} />
+
+          {/* Services page (public, but sidebar visible only if logged in) */}
+          <Route path="/services" element={<Services />} />
+
+          {/* Calendar is protected */}
+          <Route
+            path="/calendar"
+            element={
+              <PrivateRoute>
+                <Calendar />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Payment routes */}
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-cancel" element={<PaymentCancel />} />
 
+          {/* AI Chatbot */}
           <Route path="/ai-chatbot" element={<div>AI Chatbot (Coming Soon)</div>} />
+
+          {/* Admin routes with role-based access */}
           <Route
-              path="/admin"
-              element={user?.role === "SUPERUSER" ? <AdminDashboard /> : <LandingPage />}
-            />
-            <Route
-              path="/admin/users"
-              element={user?.role === "SUPERUSER" ? <UsersPage /> : <LandingPage />}
-            />
-            <Route
-              path="/therapist/dashboard"
-              element={user?.role === "THERAPIST" ? <TherapistDashboard /> : <LandingPage />}
-            />
- 
-            <Route
-              path="/dashboard"
-              element={user?.role === "CLIENT" ? <UserDashboard /> : <LandingPage />}
-            />
- 
+            path="/admin"
+            element={user?.role === "SUPERUSER" ? <AdminDashboard /> : <LandingPage />}
+          />
+          <Route
+            path="/admin/users"
+            element={user?.role === "SUPERUSER" ? <UsersPage /> : <LandingPage />}
+          />
         </Routes>
       </main>
+
       {/* Floating chatbot */}
       {isAuthenticated && (
         <>
@@ -171,12 +177,13 @@ function AppLayout() {
           <AIChatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
         </>
       )}
-      {/* Footer  */}
+
+      {/* Footer */}
       <Footer />
     </div>
   );
 }
- 
+
 function App() {
   return (
     <Router>
@@ -184,6 +191,5 @@ function App() {
     </Router>
   );
 }
- 
+
 export default App;
- 

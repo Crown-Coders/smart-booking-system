@@ -1,19 +1,50 @@
 import { CalendarRange, CheckCircle2, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
 import "./TotalSessions.css";
 
 const TotalSessions = () => {
-  const completedSessions = [
-    { id: 1, client: "John Doe", date: "2026-02-20", time: "09:00 AM", duration: "60 min", mode: "Online" },
-    { id: 2, client: "Jane Smith", date: "2026-02-22", time: "01:00 PM", duration: "45 min", mode: "In-person" },
-    { id: 3, client: "Lebo Khumalo", date: "2026-02-24", time: "11:30 AM", duration: "60 min", mode: "Online" },
-    { id: 4, client: "Peter Maseko", date: "2026-02-27", time: "03:00 PM", duration: "45 min", mode: "In-person" },
-  ];
+  const [completedSessions, setCompletedSessions] = useState([]);
+
+  useEffect(() => {
+  const fetchSessions = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      // ✅ STEP 1
+      const therapistRes = await fetch(
+        `http://localhost:5000/api/therapists/by-user/${user.id}`
+      );
+
+      const therapistData = await therapistRes.json();
+      const therapistId = therapistData.therapistId;
+
+      // ✅ STEP 2
+      const res = await fetch(
+        `http://localhost:5000/api/bookings/therapist/${therapistId}`
+      );
+
+      const data = await res.json();
+
+      // ✅ IMPORTANT: match your backend ENUM
+      const completed = data;
+
+      setCompletedSessions(completed);
+
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+    }
+  };
+
+  fetchSessions();
+}, []);
 
   return (
     <section className="total-sessions">
       <header className="total-sessions__header">
         <h1 className="total-sessions__title">Total Sessions</h1>
-        <p className="total-sessions__subtitle">Structured view of all completed therapy sessions.</p>
+        <p className="total-sessions__subtitle">
+          Structured view of all completed therapy sessions.
+        </p>
       </header>
 
       <div className="total-sessions__toolbar">
@@ -21,27 +52,37 @@ const TotalSessions = () => {
           <CheckCircle2 size={15} />
           <span>Completed: {completedSessions.length}</span>
         </div>
+
         <div className="total-sessions__chip">
           <Clock3 size={15} />
-          <span>Avg Duration: 53 min</span>
+          <span>Sessions Loaded</span>
         </div>
+
         <div className="total-sessions__chip">
           <CalendarRange size={15} />
-          <span>Current Month: 14 sessions</span>
+          <span>Auto Updated</span>
         </div>
       </div>
 
       <section className="total-sessions__panel">
-        <h2 className="total-sessions__panel-title">Completed Session List</h2>
+        <h2 className="total-sessions__panel-title">
+          Completed Session List
+        </h2>
+
         <div className="total-sessions__grid">
           {completedSessions.map((session) => (
             <article key={session.id} className="total-sessions__card">
-              <p className="total-sessions__client">{session.client}</p>
-              <p className="total-sessions__meta">
-                {session.date} | {session.time}
+              <p className="total-sessions__client">
+                {session.client?.name}
               </p>
-              <p className="total-sessions__meta">Duration: {session.duration}</p>
-              <p className="total-sessions__meta">Mode: {session.mode}</p>
+
+              <p className="total-sessions__meta">
+                {session.bookingDate} | {session.startTime} - {session.endTime}
+              </p>
+
+              <p className="total-sessions__meta">
+                Status: {session.status}
+              </p>
             </article>
           ))}
         </div>

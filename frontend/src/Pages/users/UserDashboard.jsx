@@ -2,32 +2,66 @@ import { Modal } from "react-bootstrap";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-
 function UserDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState([]);
+  const [therapists, setTherapists] = useState({}); // Store therapists by ID
+  const [stats, setStats] = useState({
+    upcoming: 0,
+    totalSessions: 0,
+    paidSessions: 0
+  });
 
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [selectedTherapist, setSelectedTherapist] = useState(null);
   const navigate = useNavigate();
 
+  // Fetch all therapists and store them in a map
+  const fetchTherapists = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const therapistsData = await response.json();
+        // Create a map of therapist profiles by ID for easy lookup
+        const therapistMap = {};
+        therapistsData.forEach(therapist => {
+          therapistMap[therapist.id] = therapist;
+        });
+        setTherapists(therapistMap);
+      }
+    } catch (err) {
+      console.error("Error fetching therapists:", err);
+    }
+  };
 
+  // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("token");
-
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-
         const data = await response.json();
         setUser(data);
+        
+        // Fetch therapists first
+        await fetchTherapists();
+        
+        // After getting user and therapists, fetch their appointments
+        if (data?.id) {
+          fetchUserAppointments(data.id);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -38,43 +72,81 @@ function UserDashboard() {
     fetchUser();
   }, []);
 
-  /* Example therapists (replace later with API) */
-  const [therapists, setTherapists] = useState([]);
-  useEffect(() => {
-    const fetchTherapists = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`);
+  // Fetch user appointments
+  const fetchUserAppointments = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/bookings/user/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
         const data = await response.json();
-
-        setTherapists(data);
-      } catch (error) {
-        console.error("Failed to fetch therapists:", error);
+        setAppointments(data);
+        calculateStats(data);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+    }
+  };
 
-  fetchTherapists();
-}, []);
+  // Calculate dashboard stats
+  const calculateStats = (appointmentsData) => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    const upcoming = appointmentsData.filter(apt => 
+      apt.bookingDate >= today && apt.status !== "CANCELLED"
+    ).length;
+    
+    const totalSessions = appointmentsData.length;
+    
+    const paidSessions = appointmentsData.filter(apt => 
+      apt.status === "CONFIRMED" || apt.status === "COMPLETED"
+    ).length;
+    
+    setStats({
+      upcoming,
+      totalSessions,
+      paidSessions
+    });
+  };
 
+  // Get therapist full name from therapist ID
+  const getTherapistName = (therapistId) => {
+    const therapist = therapists[therapistId];
+    if (therapist && therapist.user) {
+      return therapist.user.name; // This should be full name (first + last)
+    }
+    return `Therapist #${therapistId}`; // Fallback
+  };
 
-  const upcomingAppointments = [
-    {
-      id: 1,
-      date: "2024-03-15",
-      time: "10:00 AM",
-      therapist: "Dr. Smith",
-      status: "confirmed",
-      notes: "Follow-up session",
-    },
-  ];
+  // Format time to display both start and end
+  const formatTimeRange = (startTime, endTime) => {
+    // Convert time strings to display format (remove seconds if present)
+    const start = startTime?.substring(0, 5); // Gets HH:MM
+    const end = endTime?.substring(0, 5); // Gets HH:MM
+    return `${start} - ${end}`;
+  };
+
+  // Format date to more readable format
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
 
   const handleView = (apt) => {
     setSelectedAppointment(apt);
     setShowViewModal(true);
   };
 
-  const handleBook = (therapist) => {
-    setSelectedTherapist(therapist);
-    setShowBookModal(true);
+  const handleBook = () => {
+    navigate("/services");
   };
 
   if (loading) return <div className="p-5">Loading...</div>;
@@ -82,254 +154,258 @@ function UserDashboard() {
   return (
     <>
       <style>{`
+        .dashboard{
+          padding:30px;
+          background:#f9faf9;
+          min-height:100vh;
+        }
 
-      .dashboard{
-        padding:30px;
-        background:#f9faf9;
-        min-height:100vh;
-      }
+        .header{
+          margin-bottom:30px;
+        }
 
-      .header{
-        margin-bottom:30px;
-      }
+        .header h1{
+          color:#002324;
+          font-weight:600;
+        }
 
-      .header h1{
-        color:#002324;
-        font-weight:600;
-      }
+        .stats{
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+          gap:20px;
+          margin-bottom:30px;
+        }
 
-      .stats{
-        display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-        gap:20px;
-        margin-bottom:30px;
-      }
+        .stat-card{
+          background:white;
+          border-radius:15px;
+          padding:20px;
+          box-shadow:0 6px 18px rgba(0,0,0,0.05);
+        }
 
-      .stat-card{
-        background:white;
-        border-radius:15px;
-        padding:20px;
-        box-shadow:0 6px 18px rgba(0,0,0,0.05);
-      }
+        .stat-number{
+          font-size:28px;
+          font-weight:600;
+          color:#002324;
+        }
 
-      .stat-number{
-        font-size:28px;
-        font-weight:600;
-        color:#002324;
-      }
+        .appointments{
+          background:white;
+          padding:20px;
+          border-radius:15px;
+          margin-bottom:40px;
+          box-shadow:0 6px 18px rgba(0,0,0,0.05);
+        }
 
-      .appointments{
-        background:white;
-        padding:20px;
-        border-radius:15px;
-        margin-bottom:40px;
-        box-shadow:0 6px 18px rgba(0,0,0,0.05);
-      }
+        .appointment{
+          display:flex;
+          justify-content:space-between;
+          padding:12px 0;
+          border-bottom:1px solid #eee;
+        }
 
-      .appointment{
-        display:flex;
-        justify-content:space-between;
-        padding:12px 0;
-        border-bottom:1px solid #eee;
-      }
+        .badge-confirmed{
+          background:#a1ad95;
+          padding:4px 12px;
+          border-radius:20px;
+          color: #002324;
+          font-weight:500;
+        }
+        
+        .badge-pending{
+          background:#ebfacf;
+          padding:4px 12px;
+          border-radius:20px;
+          color: #002324;
+          font-weight:500;
+        }
+        
+        .badge-cancelled{
+          background:#dc3545;
+          padding:4px 12px;
+          border-radius:20px;
+          color: white;
+          font-weight:500;
+        }
+        
+        .badge-confirmed{
+          background:#a1ad95;
+          padding:4px 12px;
+          border-radius:20px;
+          color: #002324;
+          font-weight:500;
+        }
+        
+        .badge-completed{
+          background:#28a745;
+          padding:4px 12px;
+          border-radius:20px;
+          color: white;
+          font-weight:500;
+        }
 
-      .therapist-grid{
-        display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-        gap:20px;
-      }
+        .book-btn{
+          background:#002324;
+          color:white;
+          border:none;
+          padding:8px 16px;
+          border-radius:20px;
+          margin-top:10px;
+          cursor:pointer;
+        }
 
-      .therapist-card{
-        background:white;
-        border-radius:16px;
-        overflow:hidden;
-        box-shadow:0 6px 18px rgba(0,0,0,0.05);
-      }
+        .book-btn:hover{
+          background:#a1ad95;
+          color:#002324;
+        }
 
-      .therapist-card img{
-        width:100%;
-        height:200px;
-        object-fit:cover;
-      }
+        .services-prompt {
+          background: white;
+          border-radius: 16px;
+          padding: 40px;
+          text-align: center;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+        }
 
-      .therapist-body{
-        padding:18px;
-      }
+        .services-prompt h3 {
+          color: #002324;
+          margin-bottom: 20px;
+        }
 
-      .book-btn{
-        background:#002324;
-        color:white;
-        border:none;
-        padding:8px 16px;
-        border-radius:20px;
-        margin-top:10px;
-      }
+        .services-prompt p {
+          color: #666;
+          margin-bottom: 30px;
+        }
 
-      .book-btn:hover{
-        background:#a1ad95;
-        color:#002324;
-      }
+        .browse-services-btn {
+          background: #002324;
+          color: white;
+          border: none;
+          padding: 12px 30px;
+          border-radius: 30px;
+          font-size: 1.1rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
 
-      .badge-confirmed{
-        background:#a1ad95;
-        padding:4px 12px;
-        border-radius:20px;
-      }
-
+        .browse-services-btn:hover {
+          background: #a1ad95;
+          color: #002324;
+        }
+        
+        .no-appointments {
+          text-align: center;
+          padding: 30px;
+          color: #666;
+        }
+        
+        .therapist-name {
+          font-weight: 600;
+          color: #002324;
+        }
       `}</style>
 
       <div className="dashboard">
-
         {/* Header */}
         <div className="header">
           <h1>Welcome back, {user?.name || user?.email} 👋</h1>
           <p>Your wellness journey continues today.</p>
         </div>
 
-        {/* Stats */}
+        {/* Stats - Now with real data */}
         <div className="stats">
           <div className="stat-card">
             <p>Upcoming Appointments</p>
-            <div className="stat-number">{upcomingAppointments.length}</div>
+            <div className="stat-number">{stats.upcoming}</div>
           </div>
 
           <div className="stat-card">
             <p>Total Sessions</p>
-            <div className="stat-number">12</div>
+            <div className="stat-number">{stats.totalSessions}</div>
           </div>
 
           <div className="stat-card">
-            <p>Unread Messages</p>
-            <div className="stat-number">3</div>
+            <p>Paid Sessions</p>
+            <div className="stat-number">{stats.paidSessions}</div>
           </div>
         </div>
 
-        {/* Appointments */}
+        {/* Appointments - Now with real data and therapist names */}
         <div className="appointments">
           <h3>My Appointments</h3>
 
-          {upcomingAppointments.map((apt) => (
-            <div key={apt.id} className="appointment">
+          {appointments.length > 0 ? (
+            appointments.map((apt) => (
+              <div key={apt.id} className="appointment">
+                <div>
+                  <div className="therapist-name">{getTherapistName(apt.therapistId)}</div>
+                  <div>
+                    {formatDate(apt.bookingDate)} • {formatTimeRange(apt.startTime, apt.endTime)}
+                  </div>
+                  {apt.notes && <small style={{color: '#666'}}>Note: {apt.notes}</small>}
+                </div>
 
-              <div>
-                <strong>{apt.therapist}</strong>
-                <div>{apt.date} • {apt.time}</div>
+                <div>
+                  <span className={`badge-${apt.status?.toLowerCase() || 'pending'}`}>
+                    {apt.status || 'PENDING'}
+                  </span>
+                  <button
+                    className="book-btn ms-3"
+                    onClick={() => handleView(apt)}
+                  >
+                    View
+                  </button>
+                </div>
               </div>
-
-              <div>
-                <span className="badge-confirmed">{apt.status}</span>
-
-                <button
-                  className="book-btn ms-3"
-                  onClick={() => handleView(apt)}
-                >
-                  View
-                </button>
-              </div>
-
+            ))
+          ) : (
+            <div className="no-appointments">
+              <p>You don't have any appointments yet.</p>
+              <button className="browse-services-btn" onClick={handleBook}>
+                Book Your First Session
+              </button>
             </div>
-          ))}
+          )}
         </div>
 
-        {/* Therapist Booking Section */}
-        <h2 className="mb-3">Book a Therapist</h2>
-
-        <div className="therapist-grid">
-
-          {therapists.map((therapist) => (
-
-            <div key={therapist.id} className="therapist-card">
-
-            <img
-  src={therapist.image ? therapist.image : "https://i.pravatar.cc/150?img=12"}
-  alt={therapist.user?.name}
-  onError={(e) => {
-    e.target.src = "https://i.pravatar.cc/150?img=12";
-  }}
-/>
-
-              <div className="therapist-body">
-
-                <h5>Dr. {therapist.user?.name}</h5>
-
-                <p>{therapist.specialization}</p>
-
-                <small>{therapist.yearsOfExperience} experience</small>
-
-                <br />
-
-                <button
-                  className="book-btn"
-                  onClick={() => handleBook(therapist)}
-                >
-                  Book Appointment
-                </button>
-
-              </div>
-            </div>
-
-          ))}
-
-        </div>
+        {/* Browse Services Section - Show only if no appointments or always show */}
+        {appointments.length > 0 && (
+          <div className="services-prompt">
+            <h3>Need Another Session?</h3>
+            <p>Browse our services to find more therapists specialized in what you need</p>
+            <button className="browse-services-btn" onClick={handleBook}>
+              Browse Services
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* View Appointment Modal */}
+      {/* View Appointment Modal - Now with real data and therapist name */}
       <Modal show={showViewModal} onHide={() => setShowViewModal(false)} centered>
-
         <Modal.Header closeButton>
           <Modal.Title>Appointment Details</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
-
           {selectedAppointment && (
             <>
-              <p><strong>Therapist:</strong> {selectedAppointment.therapist}</p>
-              <p><strong>Date:</strong> {selectedAppointment.date}</p>
-              <p><strong>Time:</strong> {selectedAppointment.time}</p>
-              <p><strong>Notes:</strong> {selectedAppointment.notes}</p>
+              <p><strong>Booking ID:</strong> #{selectedAppointment.id}</p>
+              <p><strong>Therapist:</strong> {getTherapistName(selectedAppointment.therapistId)}</p>
+              <p><strong>Date:</strong> {formatDate(selectedAppointment.bookingDate)}</p>
+              <p><strong>Time:</strong> {formatTimeRange(selectedAppointment.startTime, selectedAppointment.endTime)}</p>
+              <p><strong>Status:</strong> 
+                <span className={`ms-2 badge-${selectedAppointment.status?.toLowerCase() || 'pending'}`}>
+                  {selectedAppointment.status || 'PENDING'}
+                </span>
+              </p>
+              {selectedAppointment.notes && (
+                <p><strong>Notes:</strong> {selectedAppointment.notes}</p>
+              )}
+              <p><strong>Booked on:</strong> {new Date(selectedAppointment.createdAt).toLocaleDateString()}</p>
             </>
           )}
-
         </Modal.Body>
-
       </Modal>
-
-      {/* Book Therapist Modal */}
-      <Modal show={showBookModal} onHide={() => setShowBookModal(false)} centered>
-
-        <Modal.Header closeButton>
-          <Modal.Title>Book Appointment</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-
-          {selectedTherapist && (
-            <>
-              <h5>{selectedTherapist.user?.name}</h5>
-
-              <p>{selectedTherapist.specialization}</p>
-
-              <p>Session Fee: <strong>R800</strong></p>
-
-            <button
-              className="book-btn"
-              onClick={() =>
-                navigate("/calendar", {
-                  state: { therapist: selectedTherapist }
-                })
-              }
-            >
-              Proceed to Booking
-            </button>
-
-            </>
-          )}
-
-        </Modal.Body>
-
-      </Modal>
-
     </>
   );
 }
