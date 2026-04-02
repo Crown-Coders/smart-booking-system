@@ -7,6 +7,7 @@ function Calendar() {
   const location = useLocation();
   const selectedTherapistFromState = location.state?.therapist;
 
+  /** -------------------- STATE -------------------- */
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -14,9 +15,7 @@ function Calendar() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectionStep, setSelectionStep] = useState('start'); // 'start' or 'end'
-  const [bookingType, setBookingType] = useState(null); // 'pay_now' only now
 
-  // Therapist selection
   const [therapist, setTherapist] = useState(selectedTherapistFromState || null);
   const [therapists, setTherapists] = useState([]);
 
@@ -29,10 +28,7 @@ function Calendar() {
   });
 
   /** -------------------- FETCH CURRENT USER -------------------- */
-  useEffect(() => {
-    fetchCurrentUser();
-  }, []);
-
+  useEffect(() => { fetchCurrentUser(); }, []);
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -59,20 +55,18 @@ function Calendar() {
 
   /** -------------------- FETCH BOOKED SLOTS -------------------- */
   useEffect(() => {
-    if (therapist && selectedDate) {
-      fetchBookedSlots();
-    }
+    if (therapist && selectedDate) fetchBookedSlots();
   }, [therapist, selectedDate]);
 
   const fetchBookedSlots = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/availability-slots?therapistId=${therapist.id}&date=${selectedDate}`
+        `${import.meta.env.VITE_API_URL}/api/bookings/available/${therapist.id}?date=${selectedDate}`
       );
       if (res.ok) {
         const data = await res.json();
-        setBookedSlots(data.slots || []);
+        setBookedSlots(data.bookedSlots || []);
       }
     } catch (err) {
       console.error(err);
@@ -95,51 +89,40 @@ function Calendar() {
           .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
       });
       minute += 30;
-      if (minute === 60) {
-        hour += 1;
-        minute = 0;
-      }
+      if (minute === 60) { hour += 1; minute = 0; }
     }
     return slots;
   };
-
   const allTimeSlots = generateTimeSlots();
 
-  /** -------------------- CHECK IF TIME SLOT HAS PASSED -------------------- */
+  /** -------------------- TIME VALIDATION -------------------- */
   const isTimeSlotPassed = (time) => {
     if (!selectedDate) return false;
-    
     const today = new Date();
     const selectedDateObj = new Date(selectedDate);
     const isToday = selectedDateObj.toDateString() === today.toDateString();
-    
     if (isToday) {
       const [hours, minutes] = time.split(':').map(Number);
-      const slotTime = new Date();
-      slotTime.setHours(hours, minutes, 0, 0);
-      const currentTime = new Date();
-      currentTime.setSeconds(0, 0);
-      
+      const slotTime = new Date(); slotTime.setHours(hours, minutes, 0, 0);
+      const currentTime = new Date(); currentTime.setSeconds(0, 0);
       return slotTime <= currentTime;
     }
-    
     return false;
   };
 
-  /** -------------------- CHECK SLOT AVAILABILITY -------------------- */
   const isSlotAvailable = (time) => {
-    // Check if time slot has passed
-    if (isTimeSlotPassed(time)) {
-      return false;
-    }
-    
-    // Block slot if any slot (reserved or booked) covers this time
-    return !bookedSlots.some(slot =>
-      time >= slot.startTime && time < slot.endTime
-    );
+    if (isTimeSlotPassed(time)) return false;
+
+    const slotStart = new Date(`1970-01-01T${time}`);
+    const slotEnd = new Date(slotStart); slotEnd.setMinutes(slotEnd.getMinutes() + 30);
+
+    return !bookedSlots.some(slot => {
+      const bookedStart = new Date(`1970-01-01T${slot.startTime}`);
+      const bookedEnd = new Date(`1970-01-01T${slot.endTime}`);
+      return slotStart < bookedEnd && slotEnd > bookedStart;
+    });
   };
 
-  /** -------------------- BOOKING -------------------- */
   const calculatePrice = (startTime, endTime) => {
     if (!startTime || !endTime) return 0;
     const start = new Date(`1970-01-01T${startTime}`);
@@ -148,56 +131,36 @@ function Calendar() {
     return hours * 800;
   };
 
+  /** -------------------- HANDLE SLOT SELECTION -------------------- */
   const handleSlotClick = (slot) => {
-    if (!isSlotAvailable(slot.time)) {
-      alert("This time slot is not available (either booked or already passed)");
-      return;
-    }
-
-    if (!bookingData.therapistId) {
-      return alert("Please select a therapist first");
-    }
+    if (!isSlotAvailable(slot.time)) { alert("This time slot is not available"); return; }
+    if (!bookingData.therapistId) { alert("Select a therapist first"); return; }
 
     if (selectionStep === 'start') {
-      setBookingData(prev => ({
-        ...prev,
-        startTime: slot.time,
-        endTime: ""
-      }));
+      setBookingData(prev => ({ ...prev, startTime: slot.time, endTime: "" }));
       setSelectionStep('end');
     } else {
-      if (slot.time <= bookingData.startTime) {
-        alert("End time must be after start time");
-        return;
-      }
-
-      // Check all slots in range
+      if (slot.time <= bookingData.startTime) { alert("End time must be after start time"); return; }
       const startIndex = allTimeSlots.findIndex(s => s.time === bookingData.startTime);
       const endIndex = allTimeSlots.findIndex(s => s.time === slot.time);
       for (let i = startIndex; i <= endIndex; i++) {
         if (!isSlotAvailable(allTimeSlots[i].time)) {
-          alert("Cannot select this range - some slots in between are already booked or have passed");
-          return;
+          alert("Cannot select range - some slots are booked or passed"); return;
         }
       }
-
-      setBookingData(prev => ({
-        ...prev,
-        endTime: slot.time
-      }));
+      setBookingData(prev => ({ ...prev, endTime: slot.time }));
       setSelectionStep('start');
     }
   };
 
+  /** -------------------- BOOKING -------------------- */
   const handleBooking = async () => {
     if (!user || !bookingData.therapistId || !bookingData.startTime || !bookingData.endTime) {
-      return alert("Please complete all booking details.");
+      return alert("Complete all booking details.");
     }
 
-    // Additional validation to prevent booking past time slots
     if (isTimeSlotPassed(bookingData.startTime)) {
-      alert("Cannot book a time slot that has already passed.");
-      return;
+      alert("Cannot book past time slot."); return;
     }
 
     try {
@@ -212,15 +175,12 @@ function Calendar() {
         endTime: bookingData.endTime,
         description: bookingData.description,
         price: calculatePrice(bookingData.startTime, bookingData.endTime),
-        status: 'pending_payment',
+        status: 'PENDING',
       };
 
       const bookingRes = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(bookingPayload),
       });
 
@@ -231,9 +191,7 @@ function Calendar() {
 
       const data = await bookingRes.json();
 
-      console.log("Booking successful:", data);
-
-      // Redirect to payment immediately
+      /** ---------- REDIRECT TO PAYFAST ---------- */
       const payfastRes = await fetch(
         `${import.meta.env.VITE_API_URL}/api/bookings/payfast/${data.booking.id}`,
         { method: "POST" }
@@ -242,14 +200,35 @@ function Calendar() {
       const { url } = await payfastRes.json();
       window.location.href = url;
 
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
+      /** ---------- POLL BOOKING STATUS ---------- */
+      const pollBookingStatus = setInterval(async () => {
+        const updatedBooking = await fetchBookingStatus(data.booking.id);
+        if (updatedBooking?.status === "COMPLETED") {
+          clearInterval(pollBookingStatus);
+          alert("Booking confirmed!");
+          setShowBookingModal(false);
+          resetBookingForm();
+          fetchBookedSlots();
+        }
+      }, 3000);
+
+    } catch (err) { console.error(err); alert(err.message); }
+    finally { setLoading(false); }
   };
 
+  /** -------------------- FETCH BOOKING STATUS -------------------- */
+  const fetchBookingStatus = async (bookingId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/payment-success/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch booking status");
+      return await res.json();
+    } catch (err) { console.error(err); return null; }
+  };
+
+  /** -------------------- RESET FORM -------------------- */
   const resetBookingForm = () => {
     setBookingData({
       therapistId: therapist?.id || "",
@@ -259,18 +238,6 @@ function Calendar() {
       description: "",
     });
     setSelectionStep('start');
-    setBookingType(null);
-  };
-
-  /** -------------------- HANDLERS -------------------- */
-  const handleDayClick = (day) => {
-    const dateKey = formatDateKey(day);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (new Date(dateKey) < today) return alert("Cannot select past dates");
-    setSelectedDate(dateKey);
-    setBookingData(prev => ({ ...prev, date: dateKey }));
-    setShowBookingModal(true);
   };
 
   /** -------------------- CALENDAR -------------------- */
@@ -282,14 +249,20 @@ function Calendar() {
   const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
-
   const formatDateKey = (day) => `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
   const todayKey = formatDateKey(new Date().getDate());
-
   const goToPreviousMonth = () => setCurrentDate(new Date(year, month-1,1));
   const goToNextMonth = () => setCurrentDate(new Date(year, month+1,1));
   const goToToday = () => setCurrentDate(new Date());
+  const handleDayClick = (day) => {
+    const dateKey = formatDateKey(day);
+    if (new Date(dateKey) < new Date(new Date().setHours(0,0,0,0))) return alert("Cannot select past dates");
+    setSelectedDate(dateKey);
+    setBookingData(prev => ({ ...prev, date: dateKey }));
+    setShowBookingModal(true);
+  };
 
+  /** -------------------- RENDER -------------------- */
   return (
     <>
       <div className="soft-calendar">
@@ -329,14 +302,12 @@ function Calendar() {
         <div className="modal-overlay" onClick={() => {setShowBookingModal(false); resetBookingForm();}}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>
-                {therapist ? `Book with Dr. ${therapist.user.name}` : "Select a Therapist"}
-              </h2>
+              <h2>{therapist ? `Book with Dr. ${therapist.user.name}` : "Select a Therapist"}</h2>
               <button className="modal-close" onClick={() => {setShowBookingModal(false); resetBookingForm();}}>×</button>
             </div>
 
             <div className="date-display">
-              {new Date(selectedDate).toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
+              {selectedDate && new Date(selectedDate).toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
             </div>
 
             {!therapist && (
@@ -362,17 +333,15 @@ function Calendar() {
             )}
 
             {therapist && (
-              <div className="therapist-info" style={{ marginBottom: '1rem', padding: '0.5rem', background: '#f0f2f0', borderRadius: '8px' }}>
-                <strong>{therapist.specialization}</strong> • {therapist.yearsOfExperience} years experience
+              <div className="therapist-info">
+                <strong>{therapist.specialization}</strong> • {therapist.yearsOfExperience} yrs
               </div>
             )}
 
             {/* Time Slots */}
             <div className="form-group">
               <label>Select Time Slots</label>
-              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                {selectionStep === 'start' ? 'Click to select start time' : 'Click to select end time'}
-              </p>
+              <p>{selectionStep === 'start' ? 'Click start time' : 'Click end time'}</p>
               {loading ? <div className="loading-spinner">Loading...</div> : (
                 <div className="time-slots">
                   {allTimeSlots.map(slot => {
@@ -380,22 +349,15 @@ function Calendar() {
                     const isStart = bookingData.startTime === slot.time;
                     const isEnd = bookingData.endTime === slot.time;
                     const isPassed = isTimeSlotPassed(slot.time);
-
                     return (
                       <button
                         key={slot.time}
                         disabled={!isAvailable || !bookingData.therapistId}
-                        className={`time-slot 
-                          ${!isAvailable ? "booked" : ""} 
-                          ${isStart ? "selected" : ""}
-                          ${isEnd ? "selected" : ""}
-                          ${isPassed ? "passed" : ""}
-                        `}
+                        className={`time-slot ${!isAvailable?'booked':''} ${isStart||isEnd?'selected':''} ${isPassed?'passed':''}`}
                         onClick={() => handleSlotClick(slot)}
-                        title={isPassed ? "This time slot has already passed" : ""}
+                        title={isPassed ? "Passed" : ""}
                       >
-                        {slot.display}
-                        {isPassed && " (Passed)"}
+                        {slot.display}{isPassed && " (Passed)"}
                       </button>
                     );
                   })}
@@ -403,20 +365,13 @@ function Calendar() {
               )}
             </div>
 
-            {/* Selected Times */}
-            {bookingData.startTime && (
-              <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#f0f2f0', borderRadius: '8px' }}>
-                <strong>Start:</strong> {new Date(`2000-01-01T${bookingData.startTime}`).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true})}
-              </div>
-            )}
-            {bookingData.endTime && (
-              <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#f0f2f0', borderRadius: '8px' }}>
-                <strong>End:</strong> {new Date(`2000-01-01T${bookingData.endTime}`).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true})}
-              </div>
-            )}
+            {/* Start & End Display */}
+            {bookingData.startTime && <div><strong>Start:</strong> {new Date(`2000-01-01T${bookingData.startTime}`).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true})}</div>}
+            {bookingData.endTime && <div><strong>End:</strong> {new Date(`2000-01-01T${bookingData.endTime}`).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true})}</div>}
 
+            {/* Price */}
             {bookingData.startTime && bookingData.endTime && (
-              <div style={{ margin: '1rem 0', padding: '0.5rem', background: '#002324', color: 'white', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{background:'#002324',color:'white',textAlign:'center'}}>
                 <strong>Total: R{calculatePrice(bookingData.startTime, bookingData.endTime)}</strong>
               </div>
             )}
@@ -428,29 +383,18 @@ function Calendar() {
                 className="form-textarea"
                 value={bookingData.description} 
                 onChange={e => setBookingData(prev => ({...prev, description: e.target.value}))}
-                placeholder="Brief description of your appointment reason..."
+                placeholder="Reason for appointment..."
                 rows="3"
               />
             </div>
 
             {/* Buttons */}
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button 
-                className="btn-secondary"
-                onClick={()=>{setShowBookingModal(false); resetBookingForm();}}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn-primary"
-                onClick={handleBooking} 
-                disabled={!bookingData.startTime || !bookingData.endTime || !bookingData.therapistId || loading}
-                style={{ backgroundColor: '#a1ad95' }}
-              >
+            <div style={{ display:'flex', gap:'1rem', marginTop:'1rem' }}>
+              <button className="btn-secondary" onClick={()=>{setShowBookingModal(false); resetBookingForm();}}>Cancel</button>
+              <button className="btn-primary" onClick={handleBooking} disabled={!bookingData.startTime || !bookingData.endTime || !bookingData.therapistId || loading}>
                 {loading ? "Processing..." : "Book & Pay Now"}
               </button>
             </div>
-
           </div>
         </div>
       )}

@@ -67,15 +67,15 @@ const ensureSuperUser = async () => {
 // Sync DB, ensure superuser, and start server
 const startServer = async () => {
   try {
-    // Force rebuild the database from your models
-    await db.sequelize.sync({ force: true });
-    console.log("Database synced (all tables recreated)");
+    // Sync DB without deleting data
+    await db.sequelize.sync(); // <-- changed from { force: true }
+    console.log('Database synced (tables created if not exist)');
 
     await ensureSuperUser(); // <-- create superuser if missing
 
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (err) {
-    console.error("Failed to sync DB or start server:", err);
+    console.error('Failed to sync DB or start server:', err);
   }
 };
  

@@ -1,57 +1,48 @@
-// routes/booking.js
-const express = require("express");
+// backend/routes/booking.js
+const express = require('express');
 const router = express.Router();
-const { Booking, AvailabilitySlot, Payment, User, sequelize,} = require("../models");
-const { generateSignature } = require("../utils/payfast");
-const sendEmail = require("../utils/sendEmail");
+const { Booking, AvailabilitySlot, Payment, User, sequelize } = require('../models');
+const { generateSignature } = require('../utils/payfast');
+const sendEmail = require('../utils/sendEmail');
+const { Op } = require('sequelize');
 
 /** -------------------- HELPER FUNCTION -------------------- */
 const calculatePrice = (startTime, endTime) => {
   const start = new Date(`1970-01-01T${startTime}`);
   const end = new Date(`1970-01-01T${endTime}`);
   const hours = (end - start) / (1000 * 60 * 60);
-  return hours * 800; // R800 per hour
+  return hours * 800; // Price per hour
 };
 
-/** -------------------- CREATE BOOKING & RESERVE SLOTS -------------------- */
-router.post("/", async (req, res) => {
-  const t = await sequelize.transaction(); // transaction start
-
+/** -------------------- CREATE BOOKING -------------------- */
+router.post('/', async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const {
-      userId,
-      therapistId,
-      bookingDate,
-      startTime,
-      endTime,
-      description,
-    } = req.body;
-
+    const { userId, therapistId, bookingDate, startTime, endTime, description } = req.body;
     if (!userId || !therapistId || !startTime || !endTime) {
       await t.rollback();
-      return res.status(400).json({ error: "Missing required booking fields" });
+      return res.status(400).json({ error: 'Missing required booking fields' });
     }
 
     const price = calculatePrice(startTime, endTime);
 
-    // Check if slot already reserved or booked
-    const existingSlot = await AvailabilitySlot.findOne({
+    /** Check overlapping bookings */
+    const overlappingBooking = await Booking.findOne({
       where: {
         therapistId,
-        date: bookingDate,
-        startTime,
+        bookingDate,
+        status: { [Op.in]: ['PENDING', 'COMPLETED'] },
+        [Op.or]: [{ startTime: { [Op.lt]: endTime }, endTime: { [Op.gt]: startTime } }],
       },
       transaction: t,
     });
 
-    if (existingSlot) {
+    if (overlappingBooking) {
       await t.rollback();
-      return res.status(400).json({
-        error: "This slot is already booked",
-      });
+      return res.status(400).json({ error: 'This time range is already booked' });
     }
 
-    /** -------------------- CREATE BOOKING -------------------- */
+    /** Create booking */
     const booking = await Booking.create(
       {
         clientId: userId,
@@ -60,23 +51,20 @@ router.post("/", async (req, res) => {
         startTime,
         endTime,
         notes: description,
-        status: "PENDING",
+        status: 'PENDING',
       },
-      { transaction: t },
+      { transaction: t }
     );
 
-    /** -------------------- RESERVE TIME SLOTS -------------------- */
+    /** Create slots */
     const start = new Date(`1970-01-01T${startTime}`);
     const end = new Date(`1970-01-01T${endTime}`);
     let current = new Date(start);
-
     const slotsToCreate = [];
 
     while (current < end) {
       const slotStart = current.toTimeString().slice(0, 5);
-
       current.setMinutes(current.getMinutes() + 30);
-
       const slotEnd = current.toTimeString().slice(0, 5);
 
       slotsToCreate.push({
@@ -84,214 +72,113 @@ router.post("/", async (req, res) => {
         date: bookingDate,
         startTime: slotStart,
         endTime: slotEnd,
-        isBooked: false, // reserved but not confirmed
+        isBooked: false,
         bookingId: booking.id,
       });
     }
 
     await AvailabilitySlot.bulkCreate(slotsToCreate, { transaction: t });
 
-    /** -------------------- CREATE PAYMENT RECORD -------------------- */
+    /** Create payment record */
     await Payment.create(
       {
         bookingId: booking.id,
-        userId: userId, // <--- add this
+        userId,
         amount: price,
-        currency: "ZAR",
-        status: "PENDING",
+        currency: 'ZAR',
+        status: 'PENDING',
         transactionReference: `BOOK-${booking.id}`,
-        paymentMethod: "CARD",
+        paymentMethod: 'CARD',
       },
-      { transaction: t },
+      { transaction: t }
     );
 
-    await t.commit(); // commit transaction
-
+    await t.commit();
     res.status(201).json({ booking, amount: price });
   } catch (error) {
-    await t.rollback(); // rollback if anything fails
-
+    await t.rollback();
     console.error(error);
-
-    res.status(500).json({ error: "Booking failed" });
+    res.status(500).json({ error: 'Booking failed' });
   }
 });
-/** -------------------- DELETE BOOKING (CANCEL) - Simplified -------------------- */
-router.delete("/:id", async (req, res) => {
+
+/** -------------------- CANCEL BOOKING -------------------- */
+router.delete('/:id', async (req, res) => {
   const t = await sequelize.transaction();
-
   try {
-    const bookingId = req.params.id;
-
-    // Find the booking
-    const booking = await Booking.findByPk(bookingId, { transaction: t });
-
+    const booking = await Booking.findByPk(req.params.id, { transaction: t });
     if (!booking) {
       await t.rollback();
-      return res.status(404).json({ error: "Booking not found" });
+      return res.status(404).json({ error: 'Booking not found' });
     }
-
-    // Check if booking can be cancelled
-    if (booking.status === "COMPLETED") {
+    if (booking.status === 'COMPLETED') {
       await t.rollback();
-      return res
-        .status(400)
-        .json({ error: "Cannot cancel a completed booking" });
+      return res.status(400).json({ error: 'Cannot cancel a completed booking' });
     }
 
-    console.log("Cancelling booking:", booking.id);
-
-    // Get all availability slots for this therapist on this date
-    const allSlots = await AvailabilitySlot.findAll({
-      where: {
-        therapistId: booking.therapistId,
-        date: booking.bookingDate,
-      },
-      transaction: t,
-    });
-
-    console.log(`Found ${allSlots.length} slots for therapist on this date`);
-
-    // Filter slots that fall within the booking time range
-    const slotsToDelete = allSlots.filter((slot) => {
-      return (
-        slot.startTime >= booking.startTime && slot.endTime <= booking.endTime
-      );
-    });
-
-    console.log(
-      `Found ${slotsToDelete.length} slots to delete within time range`,
-    );
-
-    // Delete each slot individually
-    for (const slot of slotsToDelete) {
-      await slot.destroy({ transaction: t });
-      console.log(`Deleted slot: ${slot.startTime} - ${slot.endTime}`);
-    }
-
-    // Delete payment if it exists
-    try {
-      const payments = await Payment.findAll({
-        where: { bookingId: booking.id },
-        transaction: t,
-      });
-
-      for (const payment of payments) {
-        await payment.destroy({ transaction: t });
-      }
-    } catch (err) {
-      console.log("Payment deletion skipped:", err.message);
-    }
-
-    // Delete the booking
+    /** Delete slots and payment */
+    await AvailabilitySlot.destroy({ where: { bookingId: booking.id }, transaction: t });
+    await Payment.destroy({ where: { bookingId: booking.id }, transaction: t });
     await booking.destroy({ transaction: t });
 
     await t.commit();
-
-    res.json({
-      success: true,
-      message: "Booking cancelled successfully",
-    });
+    res.json({ success: true, message: 'Booking cancelled' });
   } catch (error) {
     await t.rollback();
-    console.error("Error cancelling booking:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to cancel booking: " + error.message,
-    });
+    console.error(error);
+    res.status(500).json({ error: 'Cancel failed' });
   }
 });
 
-/** -------------------- GET AVAILABLE SLOTS -------------------- */
-router.get("/available/:therapistId", async (req, res) => {
+/** -------------------- GET BOOKED SLOTS -------------------- */
+router.get('/available/:therapistId', async (req, res) => {
   try {
     const { therapistId } = req.params;
     const { date } = req.query;
 
-    const whereClause = { therapistId };
-
-    if (date) whereClause.date = date;
-
     const bookedSlots = await AvailabilitySlot.findAll({
-      where: { ...whereClause, isBooked: true },
-      order: [["startTime", "ASC"]],
+      where: { therapistId, date, isBooked: true },
+      order: [['startTime', 'ASC']],
     });
 
     res.json({ bookedSlots });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({ error: "Failed to fetch available slots" });
+    res.status(500).json({ error: 'Failed to fetch slots' });
   }
 });
 
 /** -------------------- GET USER BOOKINGS -------------------- */
-router.get("/user/:userId", async (req, res) => {
+router.get('/user/:userId', async (req, res) => {
   try {
     const bookings = await Booking.findAll({
       where: { clientId: req.params.userId },
-      order: [["createdAt", "DESC"]],
+      order: [['createdAt', 'DESC']],
     });
-
     res.json(bookings);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({ error: "Failed to fetch bookings" });
-  }
-});
-
-/** -------------------- PAYMENT SUCCESS - MARK SLOTS BOOKED -------------------- */
-router.post("/payment-success/:bookingId", async (req, res) => {
-  try {
-    const booking = await Booking.findByPk(req.params.bookingId);
-
-    if (!booking) return res.status(404).json({ error: "Booking not found" });
-
-    booking.status = "CONFIRMED";
-
-    await booking.save();
-
-    // Mark slots as booked
-    await AvailabilitySlot.update(
-      { isBooked: true },
-      { where: { bookingId: booking.id } },
-    );
-
-    res.json({ message: "Booking confirmed and slots marked as booked" });
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({ error: "Payment confirmation failed" });
+    res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 });
 
 /** -------------------- PAYFAST REDIRECT -------------------- */
-router.post("/payfast/:bookingId", async (req, res) => {
+router.post('/payfast/:bookingId', async (req, res) => {
   try {
     const booking = await Booking.findByPk(req.params.bookingId);
-
-    if (!booking) return res.status(404).json({ error: "Booking not found" });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
     const user = await User.findByPk(booking.clientId);
-
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     const price = calculatePrice(booking.startTime, booking.endTime);
-
-    const nameParts = user.name.split(" ");
-
-    const firstName = nameParts[0];
-
-    const lastName = nameParts.slice(1).join(" ") || "User";
-
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-
-    const paymentId = `${booking.id}-${today}`;
+    const [firstName, ...lastParts] = user.name.split(' ');
+    const lastName = lastParts.join(' ') || 'User';
+    const paymentId = `${booking.id}-${Date.now()}`;
 
     const data = {
-      merchant_id: "10036644",
-      merchant_key: "t4gr984tybhfx",
+      merchant_id: '10036644',
+      merchant_key: 't4gr984tybhfx',
       return_url: `${process.env.FRONTEND_URL}/payment-success`,
       cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
       notify_url: `${process.env.BACKEND_URL}/api/bookings/payfast-ipn`,
@@ -303,55 +190,36 @@ router.post("/payfast/:bookingId", async (req, res) => {
       item_name: `Therapy Booking #${booking.id}`,
     };
 
-    data.signature = generateSignature(data, "payfastintergration");
-
-    const query = new URLSearchParams(data).toString();
-
-    const url = `https://sandbox.payfast.co.za/eng/process?${query}`;
+    data.signature = generateSignature(data, 'payfastintergration');
+    const url = `https://sandbox.payfast.co.za/eng/process?${new URLSearchParams(data)}`;
 
     res.json({ url });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({ error: "PayFast redirect failed" });
+    res.status(500).json({ error: 'PayFast redirect failed' });
   }
 });
 
 /** -------------------- PAYFAST IPN -------------------- */
-router.post("/payfast-ipn", async (req, res) => {
+router.post('/payfast-ipn', async (req, res) => {
   try {
     const { m_payment_id, payment_status } = req.body;
+    const bookingId = m_payment_id.split('-')[0];
+    const booking = await Booking.findByPk(bookingId);
 
-    const bookingId = m_payment_id.split("-")[0];
-
-    const booking = await Booking.findByPk(bookingId, { include: User });
-
-    if (booking && payment_status === "COMPLETE") {
-      booking.status = "CONFIRMED";
-
+    if (booking && payment_status === 'COMPLETE') {
+      booking.status = 'COMPLETED';
       await booking.save();
 
-      // Mark slots as booked
-      await AvailabilitySlot.update(
-        { isBooked: true },
-        { where: { bookingId: booking.id } },
-      );
+      await Payment.update({ status: 'COMPLETED' }, { where: { bookingId: booking.id } });
+      await AvailabilitySlot.update({ isBooked: true }, { where: { bookingId: booking.id } });
 
       const user = await User.findByPk(booking.clientId);
-
       if (user) {
         await sendEmail(
           user.email,
-          "Booking Confirmed",
-          `<h3>Hi ${user.name},</h3>
-           <p>Your booking #${booking.id} for ${booking.bookingDate} from ${booking.startTime} to ${booking.endTime} has been confirmed.</p>`,
-        );
-
-        await sendEmail(
-          user.email,
-          "Payment Successful",
-          `<h3>Hi ${user.name},</h3>
-           <p>Your payment has been successfully processed.</p>`,
+          'Booking Confirmed',
+          `<h3>Hi ${user.name},</h3><p>Your booking #${booking.id} is confirmed.</p>`
         );
       }
     }
@@ -359,8 +227,38 @@ router.post("/payfast-ipn", async (req, res) => {
     res.sendStatus(200);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'IPN failed' });
+  }
+});
 
-    res.status(500).json({ error: "PayFast IPN failed" });
+/** -------------------- PAYMENT SUCCESS - MARK SLOTS BOOKED -------------------- */
+router.post('/payment-success/:bookingId', async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.bookingId);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    booking.status = 'CONFIRMED';
+    await booking.save();
+
+    // Mark all slots for this booking as booked
+    await AvailabilitySlot.update({ isBooked: true }, { where: { bookingId: booking.id } });
+
+    res.json({ message: 'Booking confirmed and slots marked as booked' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Payment confirmation failed' });
+  }
+});
+
+/** -------------------- PAYMENT SUCCESS - FETCH BOOKING STATUS -------------------- */
+router.get('/payment-success/:bookingId', async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.bookingId);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json({ booking });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch booking status' });
   }
 });
 
