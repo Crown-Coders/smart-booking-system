@@ -48,16 +48,13 @@ const ensureSuperUser = async () => {
     const existing = await User.findOne({ where: { email: "super@system.com" } });
     if (!existing) {
       const hashedPassword = await bcrypt.hash("Super123!", 10);
-      await User.create({
-        name: "Main Superuser",
-        email: "super@system.com",
-        password: hashedPassword,
-        idNumber: "9999999999999",
-        role: "SUPERUSER",
-        isStaff: true,
-        isSuperUser: true,
-        isActive: true
-      });
+        await User.create({
+          name: "Main Superuser",
+          email: "super@system.com",
+          password: hashedPassword,
+          idNumber: "9999999999999",
+          role: "SUPERUSER",
+        });
       console.log("👑 Superuser created!");
     } else {
       console.log("👑 Superuser already exists!");
@@ -70,14 +67,15 @@ const ensureSuperUser = async () => {
 // Sync DB, ensure superuser, and start server
 const startServer = async () => {
   try {
-    await db.sequelize.sync();
-    console.log('Database synced');
- 
+    // Force rebuild the database from your models
+    await db.sequelize.sync({ force: true });
+    console.log("Database synced (all tables recreated)");
+
     await ensureSuperUser(); // <-- create superuser if missing
- 
+
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (err) {
-    console.error('Failed to sync DB or start server:', err);
+    console.error("Failed to sync DB or start server:", err);
   }
 };
  

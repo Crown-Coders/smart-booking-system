@@ -95,6 +95,7 @@ router.post("/", async (req, res) => {
     await Payment.create(
       {
         bookingId: booking.id,
+        userId: userId, // <--- add this
         amount: price,
         currency: "ZAR",
         status: "PENDING",
