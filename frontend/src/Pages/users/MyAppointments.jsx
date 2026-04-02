@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Container, Table, Badge, Button, Modal } from "react-bootstrap";
+import { Container, Table, Modal } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function MyAppointments() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [therapists, setTherapists] = useState({});
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
   
   const navigate = useNavigate();
 
@@ -136,17 +138,21 @@ function MyAppointments() {
     setShowCancelModal(true);
   };
 
+  const handlePay = (apt) => {
+    setSelectedAppointment(apt);
+    setShowPaymentModal(true);
+  };
+
   const confirmCancel = async () => {
     setCancelling(true);
     
     try {
       const token = localStorage.getItem("token");
       
-      // DELETE request to remove the booking from database
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/bookings/${selectedAppointment.id}`,
         {
-          method: "DELETE", // Using DELETE method to remove from DB
+          method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -155,14 +161,10 @@ function MyAppointments() {
       );
 
       if (response.ok) {
-        // Remove the deleted appointment from local state
         setAppointments(appointments.filter(apt => apt.id !== selectedAppointment.id));
         setShowCancelModal(false);
-        
-        // Optional: Show success message
-        console.log("Booking successfully deleted from database");
+        alert("Appointment cancelled successfully!");
       } else {
-        // Handle error response
         const errorData = await response.json();
         console.error("Failed to delete booking:", errorData);
         alert("Failed to cancel appointment. Please try again.");
@@ -176,8 +178,50 @@ function MyAppointments() {
     }
   };
 
+  const confirmPayment = async () => {
+    setProcessingPayment(true);
+    
+    try {
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/bookings/payfast/${selectedAppointment.id}`,
+        { method: "POST" }
+      );
+
+      if (response.ok) {
+        const { url } = await response.json();
+        window.location.href = url;
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to initiate payment. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error initiating payment:", err);
+      alert("An error occurred while processing payment. Please try again.");
+    } finally {
+      setProcessingPayment(false);
+      setShowPaymentModal(false);
+    }
+  };
+
   const handleBookNew = () => {
-    navigate("/calendar"); // Navigate to calendar page
+    navigate("/calendar");
+  };
+
+  // Check if appointment needs payment (pay later option)
+  const needsPayment = (status) => {
+    return status === 'pending_payment' || status === 'PENDING_PAYMENT';
+  };
+
+  // Check if appointment is pending admin approval (paid but not confirmed)
+  const isPendingApproval = (status) => {
+    return status === 'pending' || status === 'PENDING';
+  };
+
+  // Check if appointment is confirmed (admin approved)
+  const isConfirmed = (status) => {
+    return status === 'confirmed' || status === 'CONFIRMED' || status === 'completed' || status === 'COMPLETED';
   };
 
   // Get badge class based on status
@@ -187,6 +231,8 @@ function MyAppointments() {
         return 'badge-confirmed';
       case 'pending':
         return 'badge-pending';
+      case 'pending_payment':
+        return 'badge-pending-payment';
       case 'cancelled':
         return 'badge-cancelled';
       case 'completed':
@@ -194,6 +240,16 @@ function MyAppointments() {
       default:
         return 'badge-pending';
     }
+  };
+
+  // Get status display text
+  const getStatusDisplay = (status) => {
+    if (status === 'pending_payment' || status === 'PENDING_PAYMENT') return 'Awaiting Payment';
+    if (status === 'pending' || status === 'PENDING') return 'Pending Approval';
+    if (status === 'confirmed' || status === 'CONFIRMED') return 'Confirmed';
+    if (status === 'completed' || status === 'COMPLETED') return 'Completed';
+    if (status === 'cancelled' || status === 'CANCELLED') return 'Cancelled';
+    return status || 'PENDING';
   };
 
   if (loading) {
@@ -206,7 +262,6 @@ function MyAppointments() {
 
   return (
     <>
-      {/* Custom soft styles */}
       <style>{`
         .soft-appointments {
           background-color: #f9faf9;
@@ -218,7 +273,6 @@ function MyAppointments() {
           font-size: 2rem;
           margin-bottom: 1.5rem;
         }
-        /* Soften the table */
         .soft-appointments .table {
           border-radius: 20px;
           overflow: hidden;
@@ -241,7 +295,7 @@ function MyAppointments() {
         .soft-appointments .table tbody tr:last-child td {
           border-bottom: none;
         }
-        /* Custom badges */
+        /* Custom badges - keeping original colors */
         .soft-appointments .badge-confirmed {
           background-color: #a1ad95;
           color: #002324;
@@ -251,6 +305,14 @@ function MyAppointments() {
           display: inline-block;
         }
         .soft-appointments .badge-pending {
+          background-color: #ebfacf;
+          color: #002324;
+          font-weight: 500;
+          padding: 0.5rem 1rem;
+          border-radius: 30px;
+          display: inline-block;
+        }
+        .soft-appointments .badge-pending-payment {
           background-color: #ebfacf;
           color: #002324;
           font-weight: 500;
@@ -318,6 +380,26 @@ function MyAppointments() {
           opacity: 0.5;
           cursor: not-allowed;
         }
+        .soft-appointments .btn-soft-pay {
+          background-color: #002324;
+          color: #ebfacf;
+          border: none;
+          border-radius: 30px;
+          padding: 0.4rem 1.2rem;
+          font-size: 0.9rem;
+          transition: all 0.3s ease;
+          font-weight: 500;
+        }
+        .soft-appointments .btn-soft-pay:hover:not(:disabled) {
+          background-color: #a1ad95;
+          color: #002324;
+        }
+        .soft-appointments .btn-soft-pay:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background-color: #002324;
+          color: #ebfacf;
+        }
         /* Book new appointment button */
         .soft-appointments .btn-book {
           background-color: #002324;
@@ -371,7 +453,7 @@ function MyAppointments() {
           color: #666;
           margin-bottom: 30px;
         }
-        /* Loading spinner for cancel button */
+        /* Loading spinner */
         .spinner-small {
           display: inline-block;
           width: 16px;
@@ -439,7 +521,7 @@ function MyAppointments() {
                     <td data-label="Therapist">{getTherapistDisplayName(apt.therapistId)}</td>
                     <td data-label="Status">
                       <span className={getBadgeClass(apt.status)}>
-                        {apt.status || 'PENDING'}
+                        {getStatusDisplay(apt.status)}
                       </span>
                     </td>
                     <td data-label="Actions">
@@ -447,6 +529,14 @@ function MyAppointments() {
                         <button className="btn-soft-primary" onClick={() => handleView(apt)}>
                           View
                         </button>
+                        {needsPayment(apt.status) && (
+                          <button 
+                            className="btn-soft-pay" 
+                            onClick={() => handlePay(apt)}
+                          >
+                            Pay Now
+                          </button>
+                        )}
                         <button 
                           className="btn-soft-danger" 
                           onClick={() => handleCancel(apt)}
@@ -489,15 +579,79 @@ function MyAppointments() {
                 <p><strong>Therapist:</strong> {getTherapistDisplayName(selectedAppointment.therapistId)}</p>
                 <p><strong>Date:</strong> {formatDate(selectedAppointment.bookingDate)}</p>
                 <p><strong>Time:</strong> {formatTimeRange(selectedAppointment.startTime, selectedAppointment.endTime)}</p>
-                <p><strong>Status:</strong> <span className={getBadgeClass(selectedAppointment.status)}>{selectedAppointment.status || 'PENDING'}</span></p>
-                {selectedAppointment.notes && (
-                  <p><strong>Notes:</strong> {selectedAppointment.notes}</p>
+                <p><strong>Price:</strong> R{selectedAppointment.price || 0}</p>
+                <p><strong>Status:</strong> 
+                  <span className={getBadgeClass(selectedAppointment.status)} style={{ marginLeft: '0.5rem' }}>
+                    {getStatusDisplay(selectedAppointment.status)}
+                  </span>
+                </p>
+                {selectedAppointment.description && (
+                  <p><strong>Description:</strong> {selectedAppointment.description}</p>
                 )}
                 <p><strong>Booked on:</strong> {new Date(selectedAppointment.createdAt).toLocaleDateString()}</p>
+                
+                {/* Status-specific messages */}
+                {needsPayment(selectedAppointment.status) && (
+                  <div style={{ 
+                    marginTop: '1.5rem', 
+                    padding: '1rem', 
+                    background: '#ebfacf', 
+                    borderLeft: '4px solid #a1ad95',
+                    borderRadius: '8px'
+                  }}>
+                    <strong style={{ color: '#002324' }}>💳 Payment Required</strong>
+                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#002324' }}>
+                      This appointment has not been paid for. Please complete payment to confirm your booking.
+                    </p>
+                  </div>
+                )}
+                
+                {isPendingApproval(selectedAppointment.status) && (
+                  <div style={{ 
+                    marginTop: '1.5rem', 
+                    padding: '1rem', 
+                    background: '#ebfacf', 
+                    borderLeft: '4px solid #a1ad95',
+                    borderRadius: '8px'
+                  }}>
+                    <strong style={{ color: '#002324' }}>⏳ Pending Admin Approval</strong>
+                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#002324' }}>
+                      Your payment has been received. An administrator will confirm your appointment shortly.
+                    </p>
+                  </div>
+                )}
+                
+                {isConfirmed(selectedAppointment.status) && (
+                  <div style={{ 
+                    marginTop: '1.5rem', 
+                    padding: '1rem', 
+                    background: '#ebfacf', 
+                    borderLeft: '4px solid #a1ad95',
+                    borderRadius: '8px'
+                  }}>
+                    <strong style={{ color: '#002324' }}>✓ Appointment Confirmed</strong>
+                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#002324' }}>
+                      Your appointment has been confirmed. Please arrive on time.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </Modal.Body>
           <Modal.Footer>
+            {/* Pay button only shows for pending_payment status */}
+            {selectedAppointment && needsPayment(selectedAppointment.status) && (
+              <button 
+                className="btn-soft-pay" 
+                onClick={() => {
+                  setShowViewModal(false);
+                  handlePay(selectedAppointment);
+                }}
+                style={{ marginRight: 'auto' }}
+              >
+                Pay Now
+              </button>
+            )}
             <button className="btn-soft-outline" onClick={() => setShowViewModal(false)}>
               Close
             </button>
@@ -543,6 +697,53 @@ function MyAppointments() {
                 </>
               ) : (
                 'Yes, Cancel Booking'
+              )}
+            </button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Payment Modal */}
+        <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Complete Payment</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedAppointment && (
+              <div>
+                <p>You are about to pay for your appointment:</p>
+                <div style={{ background: '#f0f2f0', padding: '1rem', borderRadius: '10px', margin: '1rem 0' }}>
+                  <p><strong>Therapist:</strong> {getTherapistDisplayName(selectedAppointment.therapistId)}</p>
+                  <p><strong>Date:</strong> {formatDate(selectedAppointment.bookingDate)}</p>
+                  <p><strong>Time:</strong> {formatTimeRange(selectedAppointment.startTime, selectedAppointment.endTime)}</p>
+                  <p><strong>Amount:</strong> <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#002324' }}>R{selectedAppointment.price || 0}</span></p>
+                </div>
+                <p>You will be redirected to PayFast to complete the payment securely.</p>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '1rem' }}>
+                  After payment, your appointment will be pending admin approval.
+                </p>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <button 
+              className="btn-soft-outline" 
+              onClick={() => setShowPaymentModal(false)}
+              disabled={processingPayment}
+            >
+              Cancel
+            </button>
+            <button 
+              className="btn-soft-pay" 
+              onClick={confirmPayment}
+              disabled={processingPayment}
+            >
+              {processingPayment ? (
+                <>
+                  <span className="spinner-small"></span>
+                  Processing...
+                </>
+              ) : (
+                'Proceed to Payment'
               )}
             </button>
           </Modal.Footer>

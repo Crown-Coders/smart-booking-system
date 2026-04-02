@@ -125,7 +125,7 @@ export default function LandingPage() {
             Join thousands of people who have found the right therapist through Mental.com.
           </p>
           <div className="cta-centered">
-            <Link to="/register" className="primary-btn large">Find my therapist</Link>
+            <Link to="/services" className="primary-btn large">Find my therapist</Link>
           </div>
         </div>
       </section>
