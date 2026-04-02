@@ -14,6 +14,7 @@ function Calendar() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [selectionStep, setSelectionStep] = useState('start'); // 'start' or 'end'
+  const [bookingType, setBookingType] = useState(null); // 'pay_now' only now
 
   // Therapist selection
   const [therapist, setTherapist] = useState(selectedTherapistFromState || null);
@@ -79,6 +80,7 @@ function Calendar() {
       setLoading(false);
     }
   };
+
   /** -------------------- TIME SLOTS -------------------- */
   const generateTimeSlots = () => {
     const slots = [];
@@ -103,13 +105,39 @@ function Calendar() {
 
   const allTimeSlots = generateTimeSlots();
 
+  /** -------------------- CHECK IF TIME SLOT HAS PASSED -------------------- */
+  const isTimeSlotPassed = (time) => {
+    if (!selectedDate) return false;
+    
+    const today = new Date();
+    const selectedDateObj = new Date(selectedDate);
+    const isToday = selectedDateObj.toDateString() === today.toDateString();
+    
+    if (isToday) {
+      const [hours, minutes] = time.split(':').map(Number);
+      const slotTime = new Date();
+      slotTime.setHours(hours, minutes, 0, 0);
+      const currentTime = new Date();
+      currentTime.setSeconds(0, 0);
+      
+      return slotTime <= currentTime;
+    }
+    
+    return false;
+  };
+
   /** -------------------- CHECK SLOT AVAILABILITY -------------------- */
   const isSlotAvailable = (time) => {
-  // Block slot if **any slot (reserved or booked) covers this time**
-  return !bookedSlots.some(slot =>
-    time >= slot.startTime && time < slot.endTime
-  );
-};
+    // Check if time slot has passed
+    if (isTimeSlotPassed(time)) {
+      return false;
+    }
+    
+    // Block slot if any slot (reserved or booked) covers this time
+    return !bookedSlots.some(slot =>
+      time >= slot.startTime && time < slot.endTime
+    );
+  };
 
   /** -------------------- BOOKING -------------------- */
   const calculatePrice = (startTime, endTime) => {
@@ -122,7 +150,7 @@ function Calendar() {
 
   const handleSlotClick = (slot) => {
     if (!isSlotAvailable(slot.time)) {
-      alert("This time slot is already booked");
+      alert("This time slot is not available (either booked or already passed)");
       return;
     }
 
@@ -148,7 +176,7 @@ function Calendar() {
       const endIndex = allTimeSlots.findIndex(s => s.time === slot.time);
       for (let i = startIndex; i <= endIndex; i++) {
         if (!isSlotAvailable(allTimeSlots[i].time)) {
-          alert("Cannot select this range - some slots in between are already booked");
+          alert("Cannot select this range - some slots in between are already booked or have passed");
           return;
         }
       }
@@ -166,6 +194,12 @@ function Calendar() {
       return alert("Please complete all booking details.");
     }
 
+    // Additional validation to prevent booking past time slots
+    if (isTimeSlotPassed(bookingData.startTime)) {
+      alert("Cannot book a time slot that has already passed.");
+      return;
+    }
+
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -178,6 +212,7 @@ function Calendar() {
         endTime: bookingData.endTime,
         description: bookingData.description,
         price: calculatePrice(bookingData.startTime, bookingData.endTime),
+        status: 'pending_payment',
       };
 
       const bookingRes = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
@@ -196,7 +231,7 @@ function Calendar() {
 
       const data = await bookingRes.json();
 
-      // Redirect to payment
+      // Redirect to payment immediately
       const payfastRes = await fetch(
         `${import.meta.env.VITE_API_URL}/api/bookings/payfast/${data.booking.id}`,
         { method: "POST" }
@@ -222,6 +257,7 @@ function Calendar() {
       description: "",
     });
     setSelectionStep('start');
+    setBookingType(null);
   };
 
   /** -------------------- HANDLERS -------------------- */
@@ -258,10 +294,10 @@ function Calendar() {
         <div className="calendar-header">
           <h1>Calendar</h1>
           <div className="calendar-nav">
-            <button onClick={goToPreviousMonth}>←</button>
-            <span>{monthNames[month]} {year}</span>
-            <button onClick={goToNextMonth}>→</button>
-            <button onClick={goToToday}>Today</button>
+            <button className="nav-btn" onClick={goToPreviousMonth}>←</button>
+            <span className="month-year">{monthNames[month]} {year}</span>
+            <button className="nav-btn" onClick={goToNextMonth}>→</button>
+            <button className="today-btn" onClick={goToToday}>Today</button>
           </div>
         </div>
 
@@ -278,7 +314,7 @@ function Calendar() {
               return (
                 <div key={day} className={`calendar-day ${isSelected?'selected':''} ${isToday?'today':''} ${isPast?'past-date':''}`} 
                      onClick={() => !isPast && handleDayClick(day)}>
-                  <div>{day}</div>
+                  <div className="day-number">{day}</div>
                 </div>
               )
             })}
@@ -294,7 +330,7 @@ function Calendar() {
               <h2>
                 {therapist ? `Book with Dr. ${therapist.user.name}` : "Select a Therapist"}
               </h2>
-              <button onClick={() => {setShowBookingModal(false); resetBookingForm();}}>×</button>
+              <button className="modal-close" onClick={() => {setShowBookingModal(false); resetBookingForm();}}>×</button>
             </div>
 
             <div className="date-display">
@@ -305,9 +341,10 @@ function Calendar() {
               <div className="form-group">
                 <label>Select a Therapist</label>
                 <select
+                  className="form-select"
                   value={bookingData.therapistId}
                   onChange={(e) => {
-                    const selected = therapists.find(t => t.id === Number(e.target.value)); // convert to number
+                    const selected = therapists.find(t => t.id === Number(e.target.value));
                     setTherapist(selected);
                     setBookingData(prev => ({ ...prev, therapistId: selected?.id || "" }));
                   }}
@@ -334,14 +371,13 @@ function Calendar() {
               <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
                 {selectionStep === 'start' ? 'Click to select start time' : 'Click to select end time'}
               </p>
-              {loading ? <div>Loading...</div> : (
-                <div className="time-slots" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+              {loading ? <div className="loading-spinner">Loading...</div> : (
+                <div className="time-slots">
                   {allTimeSlots.map(slot => {
                     const isAvailable = isSlotAvailable(slot.time);
                     const isStart = bookingData.startTime === slot.time;
                     const isEnd = bookingData.endTime === slot.time;
-                    const isInRange = bookingData.startTime && bookingData.endTime && 
-                                     slot.time > bookingData.startTime && slot.time < bookingData.endTime;
+                    const isPassed = isTimeSlotPassed(slot.time);
 
                     return (
                       <button
@@ -349,20 +385,15 @@ function Calendar() {
                         disabled={!isAvailable || !bookingData.therapistId}
                         className={`time-slot 
                           ${!isAvailable ? "booked" : ""} 
-                          ${isStart ? "start-selected" : ""}
-                          ${isEnd ? "end-selected" : ""}
-                          ${isInRange ? "in-range" : ""}
+                          ${isStart ? "selected" : ""}
+                          ${isEnd ? "selected" : ""}
+                          ${isPassed ? "passed" : ""}
                         `}
                         onClick={() => handleSlotClick(slot)}
-                        style={{
-                          backgroundColor: !isAvailable ? '#f5f5f5' : (isStart ? '#002324' : (isEnd ? '#a1ad95' : (isInRange ? '#e5ddde' : 'white'))),
-                          color: !isAvailable ? '#a1ad95' : (isStart ? 'white' : '#002324'),
-                          border: !isAvailable ? '1px solid #e5ddde' : (isStart || isEnd ? '2px solid #002324' : '1px solid #e5ddde'),
-                          cursor: !isAvailable ? 'not-allowed' : 'pointer',
-                          textDecoration: !isAvailable ? 'line-through' : 'none'
-                        }}
+                        title={isPassed ? "This time slot has already passed" : ""}
                       >
                         {slot.display}
+                        {isPassed && " (Passed)"}
                       </button>
                     );
                   })}
@@ -392,6 +423,7 @@ function Calendar() {
             <div className="form-group">
               <label>Description (Optional)</label>
               <textarea 
+                className="form-textarea"
                 value={bookingData.description} 
                 onChange={e => setBookingData(prev => ({...prev, description: e.target.value}))}
                 placeholder="Brief description of your appointment reason..."
@@ -402,17 +434,18 @@ function Calendar() {
             {/* Buttons */}
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
               <button 
-                style={{ flex: 1, padding: '0.5rem', background: 'transparent', border: '1px solid #002324', borderRadius: '5px', cursor: 'pointer', color: 'black' }}
+                className="btn-secondary"
                 onClick={()=>{setShowBookingModal(false); resetBookingForm();}}
               >
                 Cancel
               </button>
               <button 
-                style={{ flex: 1, padding: '0.5rem', background: '#002324', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                className="btn-primary"
                 onClick={handleBooking} 
                 disabled={!bookingData.startTime || !bookingData.endTime || !bookingData.therapistId || loading}
+                style={{ backgroundColor: '#a1ad95' }}
               >
-                {loading?"Processing...":"Book & Pay"}
+                {loading ? "Processing..." : "Book & Pay Now"}
               </button>
             </div>
 
