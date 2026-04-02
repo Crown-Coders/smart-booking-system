@@ -231,6 +231,8 @@ function Calendar() {
 
       const data = await bookingRes.json();
 
+      console.log("Booking successful:", data);
+
       // Redirect to payment immediately
       const payfastRes = await fetch(
         `${import.meta.env.VITE_API_URL}/api/bookings/payfast/${data.booking.id}`,
