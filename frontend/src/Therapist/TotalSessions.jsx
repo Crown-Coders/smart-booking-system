@@ -4,39 +4,42 @@ import "./TotalSessions.css";
 
 const TotalSessions = () => {
   const [completedSessions, setCompletedSessions] = useState([]);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
-  const fetchSessions = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
+    const fetchSessions = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
 
-      // ✅ STEP 1
-      const therapistRes = await fetch(
-        `http://localhost:5000/api/therapists/by-user/${user.id}`
-      );
+        if (!user?.id) {
+          setCompletedSessions([]);
+          return;
+        }
 
-      const therapistData = await therapistRes.json();
-      const therapistId = therapistData.therapistId;
+        const therapistRes = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`);
+        if (!therapistRes.ok) throw new Error("Failed to fetch therapist profile");
 
-      // ✅ STEP 2
-      const res = await fetch(
-        `http://localhost:5000/api/bookings/therapist/${therapistId}`
-      );
+        const therapistData = await therapistRes.json();
+        const therapistId = therapistData.id;
 
-      const data = await res.json();
+        if (!therapistId) {
+          setCompletedSessions([]);
+          return;
+        }
 
-      // ✅ IMPORTANT: match your backend ENUM
-      const completed = data;
+        const res = await fetch(`${apiBaseUrl}/api/bookings/therapist/${therapistId}`);
+        if (!res.ok) throw new Error("Failed to fetch sessions");
 
-      setCompletedSessions(completed);
+        const data = await res.json();
+        setCompletedSessions(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Error fetching sessions:", error);
+        setCompletedSessions([]);
+      }
+    };
 
-    } catch (error) {
-      console.error("Error fetching sessions:", error);
-    }
-  };
-
-  fetchSessions();
-}, []);
+    fetchSessions();
+  }, [apiBaseUrl]);
 
   return (
     <section className="total-sessions">

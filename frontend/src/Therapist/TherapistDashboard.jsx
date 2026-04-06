@@ -63,6 +63,7 @@ const styles = {
 
 const TherapistDashboard = () => {
   const navigate = useNavigate();
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const [bookings, setBookings] = useState([]);
   const [therapistName, setTherapistName] = useState("");
@@ -78,51 +79,44 @@ const TherapistDashboard = () => {
   setTherapistName(user.name);
 
   const fetchBookings = async () => {
-  try {
-    // 🔥 STEP 1: get therapistId using userId
-    const therapistRes = await fetch(
-      `http://localhost:5000/api/therapists/by-user/${user.id}`
-    );
+    try {
+      // Get therapist profile for the currently logged-in user.
+      const therapistRes = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`);
 
-    if (!therapistRes.ok) throw new Error("Failed to fetch therapist ID");
+      if (!therapistRes.ok) throw new Error("Failed to fetch therapist profile");
 
-    const therapistData = await therapistRes.json();
+      const therapistData = await therapistRes.json();
+      const therapistId = therapistData.id;
 
-    const therapistId = therapistData.therapistId;
+      if (!therapistId) {
+        setBookings([]);
+        return;
+      }
 
-    console.log("Therapist ID:", therapistId);
+      const bookingsRes = await fetch(`${apiBaseUrl}/api/bookings/therapist/${therapistId}`);
 
-    // 🔥 STEP 2: fetch bookings using therapistId
-    const bookingsRes = await fetch(
-      `http://localhost:5000/api/bookings/therapist/${therapistId}`
-    );
+      if (!bookingsRes.ok) throw new Error("Failed to fetch bookings");
 
-    if (!bookingsRes.ok) throw new Error("Failed to fetch bookings");
-
-    const bookingsData = await bookingsRes.json();
-
-    console.log("Fetched bookings:", bookingsData);
-
-    setBookings(bookingsData);
-
-  } catch (error) {
-    console.error("Error fetching bookings:", error);
-  }
-};
+      const bookingsData = await bookingsRes.json();
+      setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      setBookings([]);
+    }
+  };
 
   fetchBookings();
-}, []);
+}, [apiBaseUrl]);
 
-  const today = new Date().toISOString().split("T")[0];
+  const parseDateOnly = (value) => new Date(`${value}T00:00:00`);
+  const today = parseDateOnly(new Date().toISOString().split("T")[0]);
 
   const upcoming = bookings.filter(
-  (b) => new Date(b.bookingDate) >= new Date(today)
+  (b) => b.bookingDate && parseDateOnly(b.bookingDate) >= today
 );
 
-console.log("Upcoming sessions:", upcoming); // ✅ DEBUG LINE
-
 const history = bookings.filter(
-  (b) => new Date(b.bookingDate) < new Date(today)
+  (b) => b.bookingDate && parseDateOnly(b.bookingDate) < today
 );
 
   return (
