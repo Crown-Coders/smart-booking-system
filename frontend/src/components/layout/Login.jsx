@@ -7,6 +7,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate(); 
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,7 +18,7 @@ function Login() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -54,6 +55,11 @@ function Login() {
       }
 
     } catch (err) {
+      if (err instanceof TypeError) {
+        setError(`Cannot reach backend at ${apiBaseUrl}. Make sure backend is running and CORS allows this frontend origin.`);
+        return;
+      }
+
       setError(err.message || "Something went wrong");
     }
   };

@@ -30,6 +30,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
 
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+
   role: {
     type: DataTypes.STRING,
     defaultValue: 'CLIENT',

@@ -3,6 +3,25 @@ import "./Profile.css";
 
 const Profile = () => {
   const role = "therapist";
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  const mapApiProfileToForm = (data) => ({
+    name: data?.name || "",
+    email: data?.email || "",
+    phone: data?.phone || "",
+    idNumber: data?.idNumber || "",
+    specialization: data?.specialization || "",
+    qualification: data?.qualification || "",
+    yearsOfExperience: data?.yearsOfExperience || 0,
+    licenseNumber: data?.licenseNumber || "",
+    bio: data?.bio || "",
+    createdAt: data?.createdAt
+      ? new Date(data.createdAt).toLocaleDateString()
+      : "",
+    updatedAt: data?.updatedAt
+      ? new Date(data.updatedAt).toLocaleDateString()
+      : "",
+  });
 
   const [profile, setProfile] = useState({
     name: "",
@@ -19,6 +38,7 @@ const Profile = () => {
   });
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Automatically fetch logged-in therapist profile
   useEffect(() => {
@@ -31,29 +51,15 @@ const Profile = () => {
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:5000/api/therapists/${user.id}`
-        );
+        const response = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch therapist profile");
+        }
 
         const data = await response.json();
 
-        setProfile({
-          name: data?.name || "",
-          email: data?.email || "",
-          phone: data?.phone || "",
-          idNumber: data?.idNumber || "",
-          specialization: data?.specialization || "",
-          qualification: data?.qualification || "",
-          yearsOfExperience: data?.yearsOfExperience || 0,
-          licenseNumber: data?.licenseNumber || "",
-          bio: data?.bio || "",
-          createdAt: data?.createdAt
-            ? new Date(data.createdAt).toLocaleDateString()
-            : "",
-          updatedAt: data?.updatedAt
-            ? new Date(data.updatedAt).toLocaleDateString()
-            : "",
-        });
+        setProfile(mapApiProfileToForm(data));
 
         setLoading(false);
       } catch (error) {
@@ -63,7 +69,7 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [apiBaseUrl]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,34 +82,58 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
+      setSaving(true);
       const user = JSON.parse(localStorage.getItem("user"));
 
-      const response = await fetch(
-        `http://localhost:5000/api/therapists/${user.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(profile),
-        }
-      );
+      if (!user || !user.id) {
+        throw new Error("No logged-in user found");
+      }
+
+      const payload = {
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        idNumber: profile.idNumber,
+        specialization: profile.specialization,
+        qualification: profile.qualification,
+        yearsOfExperience: Number(profile.yearsOfExperience) || 0,
+        licenseNumber: profile.licenseNumber,
+        bio: profile.bio,
+      };
+
+      const response = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to save profile");
+      }
 
       const updatedData = await response.json();
 
-      setProfile({
-        ...updatedData,
-        createdAt: updatedData.createdAt
-          ? new Date(updatedData.createdAt).toLocaleDateString()
-          : "",
-        updatedAt: updatedData.updatedAt
-          ? new Date(updatedData.updatedAt).toLocaleDateString()
-          : "",
-      });
+      setProfile(mapApiProfileToForm(updatedData));
+
+      const existingUser = JSON.parse(localStorage.getItem("user") || "{}");
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...existingUser,
+          name: updatedData?.name || existingUser.name,
+          email: updatedData?.email || existingUser.email,
+        })
+      );
 
       alert("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
+      alert(error.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -210,8 +240,8 @@ const Profile = () => {
         className="profile-page__input"
       />
 
-      <button onClick={handleSave} className="profile-page__button">
-        Save Changes
+      <button onClick={handleSave} className="profile-page__button" disabled={saving}>
+        {saving ? "Saving..." : "Save Changes"}
       </button>
     </div>
   );

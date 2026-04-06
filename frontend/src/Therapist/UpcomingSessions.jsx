@@ -5,45 +5,53 @@ import "./UpcomingSessions.css";
 const UpcomingSessions = () => {
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   // Fetch upcoming sessions from backend
   useEffect(() => {
-  const fetchSessions = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
+    const fetchSessions = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
 
-      // ✅ STEP 1
-      const therapistRes = await fetch(
-        `http://localhost:5000/api/therapists/by-user/${user.id}`
-      );
+        if (!user?.id) {
+          setUpcomingSessions([]);
+          return;
+        }
 
-      const therapistData = await therapistRes.json();
-      const therapistId = therapistData.therapistId;
+        const therapistRes = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`);
+        if (!therapistRes.ok) throw new Error("Failed to fetch therapist profile");
 
-      // ✅ STEP 2
-      const response = await fetch(
-        `http://localhost:5000/api/bookings/therapist/${therapistId}`
-      );
+        const therapistData = await therapistRes.json();
+        const therapistId = therapistData.id;
 
-      const data = await response.json();
+        if (!therapistId) {
+          setUpcomingSessions([]);
+          return;
+        }
 
-      const today = new Date().toISOString().split("T")[0];
+        const response = await fetch(`${apiBaseUrl}/api/bookings/therapist/${therapistId}`);
+        if (!response.ok) throw new Error("Failed to fetch upcoming sessions");
 
-      const upcoming = data.filter(
-        (b) => new Date(b.bookingDate) >= new Date(today)
-      );
+        const data = await response.json();
 
-      setUpcomingSessions(upcoming);
+        const parseDateOnly = (value) => new Date(`${value}T00:00:00`);
+        const today = parseDateOnly(new Date().toISOString().split("T")[0]);
 
-      if (upcoming.length > 0) setSelectedId(upcoming[0].id);
+        const upcoming = (Array.isArray(data) ? data : []).filter(
+          (b) => b.bookingDate && parseDateOnly(b.bookingDate) >= today
+        );
 
-    } catch (error) {
-      console.error("Error fetching upcoming sessions:", error);
-    }
-  };
+        setUpcomingSessions(upcoming);
+        setSelectedId(upcoming.length > 0 ? upcoming[0].id : null);
+      } catch (error) {
+        console.error("Error fetching upcoming sessions:", error);
+        setUpcomingSessions([]);
+        setSelectedId(null);
+      }
+    };
 
-  fetchSessions();
-}, []);
+    fetchSessions();
+  }, [apiBaseUrl]);
 
   const selectedSession = upcomingSessions.find((session) => session.id === selectedId);
 
@@ -63,7 +71,7 @@ const UpcomingSessions = () => {
         </div>
         <div className="upcoming-sessions__chip">
           <Timer size={15} />
-          <span>Next Session: {upcomingSessions[0]?.time ?? "N/A"}</span>
+          <span>Next Session: {upcomingSessions[0]?.startTime ?? "N/A"}</span>
         </div>
       </div>
 

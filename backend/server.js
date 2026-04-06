@@ -21,11 +21,27 @@ const app = express();
 const PORT = process.env.PORT || 5000;
  
 // Configure CORS
+const allowedOrigins = new Set([
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'https://smart-booking-system-8cgy.onrender.com'
+].filter(Boolean));
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://smart-booking-system-8cgy.onrender.com'
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like curl/Postman/mobile apps)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Allow Vite dev server ports (5173, 5174, etc.) and explicit allow-list origins
+    const isLocalhostDev = /^http:\/\/localhost:\d+$/.test(origin);
+    if (allowedOrigins.has(origin) || isLocalhostDev) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true
 }));
 app.use(bodyParser.json());
