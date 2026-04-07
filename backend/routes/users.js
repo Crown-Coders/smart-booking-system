@@ -101,6 +101,50 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.patch('/:id', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { name, email, idNumber, role } = req.body;
+    const normalizedRole = role ? String(role).toUpperCase() : user.role;
+    const allowedRoles = ['CLIENT', 'THERAPIST', 'ADMIN'];
+
+    if (!allowedRoles.includes(normalizedRole)) {
+      return res.status(400).json({ message: 'Invalid role selected' });
+    }
+
+    if (!name || !email || !idNumber) {
+      return res.status(400).json({ message: 'Name, email, and ID number are required' });
+    }
+
+    const existingUser = await User.findOne({
+      where: { email }
+    });
+
+    if (existingUser && existingUser.id !== user.id) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    user.name = name;
+    user.email = email.toLowerCase();
+    user.idNumber = idNumber;
+    user.role = normalizedRole;
+    user.isStaff = ['THERAPIST', 'ADMIN'].includes(normalizedRole);
+    user.isSuperUser = false;
+
+    await user.save();
+
+    res.json(serializeUser(user));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error updating user' });
+  }
+});
+
 // Deactivate user
 router.patch('/:id/deactivate', async (req, res) => {
   try {
@@ -113,7 +157,7 @@ router.patch('/:id/deactivate', async (req, res) => {
     user.isActive = false;
     await user.save();
 
-    res.json(user);
+    res.json(serializeUser(user));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error deactivating user' });
@@ -132,7 +176,7 @@ router.patch('/:id/activate', async (req, res) => {
     user.isActive = true;
     await user.save();
 
-    res.json(user);
+    res.json(serializeUser(user));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error activating user' });

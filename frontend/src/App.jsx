@@ -37,6 +37,8 @@ import PaymentCancel from "./Pages/PaymentCancel";
 // Admin pages
 import AdminDashboard from "./Pages/AdminDashboard";
 import UsersPage from "./Pages/UserPage";
+import AdminReports from "./Pages/AdminReports";
+import AdminSettings from "./Pages/AdminSettings";
 
 // Helper to detect dashboard routes for showing sidebar
 const isDashboardRoute = (pathname) => {
@@ -231,6 +233,18 @@ function AppLayout() {
           <Route
             path="/admin/users"
             element={user?.role === "SUPERUSER" ? <UsersPage /> : <LandingPage />}
+          />
+          <Route
+            path="/admin/reports"
+            element={user?.role === "SUPERUSER" ? <AdminReports /> : <LandingPage />}
+          />
+          <Route
+            path="/admin/settings"
+            element={user?.role === "SUPERUSER" ? <AdminSettings /> : <LandingPage />}
+          />
+          <Route
+            path="/admin/System Settings"
+            element={user?.role === "SUPERUSER" ? <AdminSettings /> : <LandingPage />}
           />
         </Routes>
       </main>
