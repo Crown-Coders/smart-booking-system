@@ -32,7 +32,7 @@ const Profile = () => {
         }
 
         const response = await fetch(
-          `http://localhost:5000/api/therapists/${user.id}`
+          `${import.meta.env.VITE_API_URL}/api/therapists/${user.id}`
         );
 
         const data = await response.json();
@@ -79,7 +79,7 @@ const Profile = () => {
       const user = JSON.parse(localStorage.getItem("user"));
 
       const response = await fetch(
-        `http://localhost:5000/api/therapists/${user.id}`,
+        `${import.meta.env.VITE_API_URL}/api/therapists/${user.id}`,
         {
           method: "PUT",
           headers: {

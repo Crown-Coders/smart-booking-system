@@ -17,7 +17,7 @@ const BookingHistory = () => {
 
       // ✅ STEP 1: get therapistId
       const therapistRes = await fetch(
-        `http://localhost:5000/api/therapists/by-user/${user.id}`
+        `${import.meta.env.VITE_API_URL}/api/therapists/by-user/${user.id}`
       );
 
       if (!therapistRes.ok) throw new Error("Failed to fetch therapist ID");
@@ -27,7 +27,7 @@ const BookingHistory = () => {
 
       // ✅ STEP 2: fetch bookings using therapistId
       const response = await fetch(
-        `http://localhost:5000/api/bookings/therapist/${therapistId}`
+        `${import.meta.env.VITE_API_URL}/api/bookings/therapist/${therapistId}`
       );
 
       if (!response.ok) throw new Error("Failed to fetch booking history");
