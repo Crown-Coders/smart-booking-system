@@ -83,7 +83,7 @@ const TherapistDashboard = () => {
   try {
     // 🔥 STEP 1: get therapistId using userId
     const therapistRes = await fetch(
-      `http://localhost:5000/api/therapists/by-user/${user.id}`
+      `${import.meta.env.VITE_API_URL}/api/therapists/by-user/${user.id}`
     );
 
     if (!therapistRes.ok) throw new Error("Failed to fetch therapist ID");
@@ -96,7 +96,7 @@ const TherapistDashboard = () => {
 
     // 🔥 STEP 2: fetch bookings using therapistId
     const bookingsRes = await fetch(
-      `http://localhost:5000/api/bookings/therapist/${therapistId}`
+      `${import.meta.env.VITE_API_URL}/api/bookings/therapist/${therapistId}`
     );
 
     if (!bookingsRes.ok) throw new Error("Failed to fetch bookings");

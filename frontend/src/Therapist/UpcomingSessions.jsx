@@ -14,7 +14,7 @@ const UpcomingSessions = () => {
 
       // ✅ STEP 1
       const therapistRes = await fetch(
-        `http://localhost:5000/api/therapists/by-user/${user.id}`
+        `${import.meta.env.VITE_API_URL}/api/therapists/by-user/${user.id}`
       );
 
       const therapistData = await therapistRes.json();
@@ -22,7 +22,7 @@ const UpcomingSessions = () => {
 
       // ✅ STEP 2
       const response = await fetch(
-        `http://localhost:5000/api/bookings/therapist/${therapistId}`
+        `${import.meta.env.VITE_API_URL}/api/bookings/therapist/${therapistId}`
       );
 
       const data = await response.json();

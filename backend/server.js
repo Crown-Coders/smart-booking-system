@@ -116,7 +116,7 @@ const ensureLocalSqliteColumns = async () => {
 // Sync DB, ensure superuser, and start server
 const startServer = async () => {
   try {
-    await db.sequelize.sync();
+    await db.sequelize.sync({alter: true});
     await ensureLocalSqliteColumns();
     console.log("Database synced");
 

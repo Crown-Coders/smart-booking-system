@@ -36,7 +36,7 @@ module.exports = defineConfig({
   
   // Environment variables
   env: {
-    apiUrl: 'http://localhost:5000',
+    apiUrl: '${import.meta.env.VITE_API_URL}',
     coverage: true,
   },
   
