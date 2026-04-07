@@ -8,6 +8,26 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
+function getFallbackReply(history, firstName) {
+  const lastUserMessage = [...history]
+    .reverse()
+    .find((message) => message.role === "user")?.content?.toLowerCase() || "";
+
+  if (/price|cost|fee|session/i.test(lastUserMessage)) {
+    return `${firstName}, sessions are currently charged at R800 per hour. If you want, I can also help you find a therapist and choose a time slot.`;
+  }
+
+  if (/therapist|counsel|psychologist|specialist/i.test(lastUserMessage)) {
+    return `${firstName}, I can help you explore therapist options by specialty and guide you toward booking. Tell me what kind of support you are looking for, such as anxiety, trauma, couples support, or general counselling.`;
+  }
+
+  if (/book|appointment|session|calendar/i.test(lastUserMessage)) {
+    return `${firstName}, you can book a session by choosing a service, selecting a therapist, and then picking an available time slot in the calendar.`;
+  }
+
+  return `${firstName}, I can help with therapist options, bookings, session pricing, and simple wellbeing guidance right here.`;
+}
+
 /**
  * --- 1. TOOLS DEFINITION ---
  * These allow the AI to interact with your database.
@@ -81,17 +101,29 @@ async function executeFunctionCall(functionName, args) {
   }
   return "Unknown function";
 }
-
+async function callLLM(messages, tools) {
+  return groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages,
+    tools,
+    tool_choice: "auto",
+    temperature: 0.6,
+    max_tokens: 400,
+    frequency_penalty: 0.7,
+    presence_penalty: 0.6
+  });
+}
 /**
  * --- 3. MAIN CHAT ROUTE ---
  */
 router.post("/", async (req, res) => {
   try {
-    const { history } = req.body;
-    const authHeader = req.headers.authorization;
+    const { history } = req.body;               // ✅ get history from body
+    const authHeader = req.headers.authorization; // ✅ get auth header
 
-    //   history exists here
-    const userWantsTherapist = history.some(m =>
+    const safeHistory = Array.isArray(history) ? history : [];
+
+    const userWantsTherapist = safeHistory.some(m =>
       m.role === "user" &&
       /therapist|counsel|psychologist|book|appointment/i.test(m.content)
     );
@@ -173,16 +205,12 @@ ${therapistData.join("\n")}
       ...(history || [])
     ];
     // API Call to Groq
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant", 
-      messages: messages,
-      tools: tools,
-      tool_choice: "auto",
-      temperature: 0.6,
-      max_tokens: 400,
-      frequency_penalty: 0.7, // Helps prevent the double-response bug
-      presence_penalty: 0.6 // restriction because LLaMA models still like to be helpful to a fault.
-    });
+    //This allows you to stub callLLM in tests
+    if (!process.env.GROQ_API_KEY) {
+      return res.json({ reply: getFallbackReply(safeHistory, firstName) });
+    }
+
+    const completion = await callLLM(messages, tools);
 
     const responseMessage = completion.choices[0].message;
 
@@ -191,9 +219,16 @@ ${therapistData.join("\n")}
       messages.push(responseMessage); // Required protocol step
 
       for (const toolCall of responseMessage.tool_calls) {
+        let parsedArgs = {};
+        try {
+          parsedArgs = JSON.parse(toolCall.function.arguments || "{}");
+        } catch (e) {
+          parsedArgs = {};
+        }
+
         const functionResponse = await executeFunctionCall(
           toolCall.function.name,
-          JSON.parse(toolCall.function.arguments)
+          parsedArgs
         );
 
         messages.push({
@@ -217,8 +252,10 @@ ${therapistData.join("\n")}
 
   } catch (error) {
     console.error("Chatbot Route Error:", error);
-    res.status(500).json({ error: "I'm having a little trouble connecting right now." });
+    const safeHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+    res.json({ reply: getFallbackReply(safeHistory, "there") });
   }
 });
-
-module.exports = router;
+ module.exports = router;
+module.exports.executeFunctionCall = executeFunctionCall;
+module.exports.callLLM = callLLM;

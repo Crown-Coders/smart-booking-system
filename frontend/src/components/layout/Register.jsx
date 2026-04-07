@@ -32,7 +32,7 @@ function Register({ onRegisterSuccess }) {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
+      const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -47,6 +47,7 @@ function Register({ onRegisterSuccess }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Registration failed");
 
+      window.dispatchEvent(new Event("authchange"));
       if (typeof onRegisterSuccess === 'function') {
         onRegisterSuccess();
       }
@@ -77,8 +78,9 @@ function Register({ onRegisterSuccess }) {
         <form onSubmit={handleSubmit}>
           
           <div className="input-group" style={{ marginBottom: "1.5rem" }}> 
-            <label>Name</label>
+            <label htmlFor="register-name">Name</label>
             <input
+              id="register-name"
               type="text"
               name="name"
               placeholder="First Name"
@@ -90,8 +92,9 @@ function Register({ onRegisterSuccess }) {
           </div>
           
           <div className="input-group" style={{ marginBottom: "1.5rem" }}>
-            <label>Surname</label>
+            <label htmlFor="register-surname">Surname</label>
             <input
+              id="register-surname"
               type="text"
               name="surname"
               placeholder="Last Name"
@@ -103,8 +106,9 @@ function Register({ onRegisterSuccess }) {
           </div>
 
           <div className="input-group" style={{ marginBottom: "1.5rem" }}>
-            <label>ID Number</label>
+            <label htmlFor="register-id-number">ID Number</label>
             <input
+              id="register-id-number"
               type="text"
               name="idNumber"
               placeholder="Enter your ID Number"
@@ -116,8 +120,9 @@ function Register({ onRegisterSuccess }) {
           </div>
 
           <div className="input-group" style={{ marginBottom: "1.5rem" }}>
-            <label>Email</label>
+            <label htmlFor="register-email">Email</label>
             <input
+              id="register-email"
               type="email"
               name="email"
               placeholder="you@example.com"
@@ -130,8 +135,9 @@ function Register({ onRegisterSuccess }) {
 
           <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
             <div className="input-group" style={{ marginBottom: 0, flex: 1 }}>
-              <label>Password</label>
+              <label htmlFor="register-password">Password</label>
               <input
+                id="register-password"
                 type="password"
                 name="password"
                 placeholder="Password"
@@ -142,8 +148,9 @@ function Register({ onRegisterSuccess }) {
               />
             </div>
             <div className="input-group" style={{ marginBottom: 0, flex: 1 }}>
-              <label>Confirm</label>
+              <label htmlFor="register-confirm-password">Confirm</label>
               <input
+                id="register-confirm-password"
                 type="password"
                 name="confirmPassword"
                 placeholder="Confirm Password"

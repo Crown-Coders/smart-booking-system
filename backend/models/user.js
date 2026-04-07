@@ -29,6 +29,26 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    cardHolderName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    cardBrand: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    cardLast4: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    cardExpiryMonth: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    cardExpiryYear: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
 
   role: {
     type: DataTypes.STRING,

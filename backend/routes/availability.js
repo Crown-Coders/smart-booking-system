@@ -1,32 +1,36 @@
-// routes/availability.js
 const express = require("express");
 const router = express.Router();
 const { AvailabilitySlot } = require("../models");
+const { Op, fn, col, where } = require("sequelize");
 
-// Get availability for therapist by date
-router.get("/:therapistId", async (req, res) => {
+router.get("/", async (req, res) => {
+
+  const { therapistId, date } = req.query;
+
+  if (!therapistId || !date) {
+    return res.status(400).json({ error: "therapistId and date required" });
+  }
+
   try {
-    const { therapistId } = req.params;
-    const { date } = req.query;
-
-    const whereClause = {
-      therapistId: therapistId
-    };
-
-    if (date) {
-      whereClause.date = date;
-    }
 
     const slots = await AvailabilitySlot.findAll({
-      where: whereClause,
-      order: [['time', 'ASC']]
+      where: {
+        [Op.and]: [
+          { therapistId },
+          where(fn('date', col('date')), date),
+        ],
+      },
+      attributes: ["startTime", "endTime", "isBooked"],
+      order: [["startTime", "ASC"]]
     });
 
-    res.json(slots);
+    res.json({ slots });
+
   } catch (error) {
-    console.error('Error fetching availability:', error);
+    console.error("Availability error:", error);
     res.status(500).json({ error: "Failed to fetch availability" });
   }
+
 });
 
 module.exports = router;

@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const colors = {
   deepTeal: '#002324',
@@ -19,29 +21,6 @@ const styles = {
     padding: '0',
     minHeight: '100vh',
   },
-  topbar: {
-    backgroundColor: colors.white,
-    borderBottom: `1px solid ${colors.sand}`,
-    padding: '1.25rem 2.5rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'sticky',
-    top: 0,
-    zIndex: 50,
-  },
-  pageTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    color: colors.deepTeal,
-    letterSpacing: '-0.02em',
-  },
-  pageDate: {
-    fontSize: '0.8rem',
-    color: colors.sage,
-    letterSpacing: '0.05em',
-    marginTop: '2px',
-  },
   content: {
     padding: '2rem 2.5rem',
   },
@@ -58,6 +37,7 @@ const styles = {
     border: `1px solid ${colors.sand}`,
     borderTop: `4px solid ${accent}`,
     boxShadow: '0 2px 8px rgba(0,35,36,0.05)',
+    cursor: 'pointer',
   }),
   statLabel: {
     fontSize: '0.7rem',
@@ -112,7 +92,6 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
     letterSpacing: '0.03em',
-    transition: 'all 0.2s',
     fontFamily: '"DM Sans", sans-serif',
   },
   table: {
@@ -144,7 +123,7 @@ const styles = {
       therapist: { bg: '#EEF2FF', color: '#3730A3', border: '#C7D2FE' },
       admin: { bg: '#FFF8E1', color: '#B7791F', border: '#F6E05E' },
     };
-    const s = map[role] || map.client;
+    const s = map[String(role || '').toLowerCase()] || map.client;
     return {
       display: 'inline-block',
       padding: '3px 10px',
@@ -168,7 +147,6 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
-    transition: 'all 0.15s',
     fontFamily: '"DM Sans", sans-serif',
     ...(variant === 'edit'
       ? { backgroundColor: colors.sand, color: colors.deepTeal }
@@ -190,7 +168,6 @@ const styles = {
     flexShrink: 0,
     marginRight: '10px',
   },
-  // Modal overlay
   overlay: {
     position: 'fixed',
     top: 0,
@@ -265,7 +242,6 @@ const styles = {
     fontFamily: '"DM Sans", sans-serif',
     outline: 'none',
     boxSizing: 'border-box',
-    transition: 'border-color 0.15s',
   },
   select: {
     width: '100%',
@@ -300,315 +276,365 @@ const styles = {
   },
 };
 
+const emptyNewUser = { name: '', surname: '', email: '', password: '', idNumber: '', role: 'client' };
+const emptyEditUser = { id: null, name: '', email: '', idNumber: '', role: 'client' };
+
 const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  d ? new Date(d).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
 const getInitials = (name = '') =>
   name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
+const normalizeRole = (role = '') => String(role).toLowerCase();
+
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'client' });
+  const [editingUser, setEditingUser] = useState(false);
+  const [newUser, setNewUser] = useState(emptyNewUser);
+  const [editUser, setEditUser] = useState(emptyEditUser);
   const [filterRole, setFilterRole] = useState('all');
 
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users`);
+      if (!res.ok) throw new Error('Failed to fetch users');
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to fetch users');
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users`);
-        const data = await res.json();
-        setUsers(data);
-      } catch (err) {
-        console.error(err);
-        alert('Failed to fetch users');
-      }
-    };
     fetchUsers();
   }, []);
 
   const addUser = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
+      if (!newUser.name || !newUser.surname || !newUser.email || !newUser.password || !newUser.idNumber) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser),
       });
       const data = await res.json();
-      setUsers([...users, data]);
+      if (!res.ok) throw new Error(data?.message || 'Failed to add user');
+
+      await fetchUsers();
       setShowModal(false);
-      setNewUser({ name: '', email: '', password: '', role: 'client' });
+      setNewUser(emptyNewUser);
     } catch (err) {
       console.error(err);
-      alert('Failed to add user');
+      alert(err.message || 'Failed to add user');
     }
   };
 
-const deactivateUser = async (id) => {
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}/deactivate`, {
-      method: 'PATCH', // PATCH is better for updates
-      headers: { 'Content-Type': 'application/json' },
+  const openEditModal = (user) => {
+    setEditUser({
+      id: user.id,
+      name: user.name || '',
+      email: user.email || '',
+      idNumber: user.idNumber || '',
+      role: normalizeRole(user.role),
     });
-    const updatedUser = await res.json();
+    setEditingUser(true);
+  };
 
-    // Update the state
-    setUsers(users.map((u) => (u.id === id ? updatedUser : u)));
-  } catch (err) {
-    console.error(err);
-    alert('Failed to deactivate user');
-  }
-};
+  const saveEditedUser = async () => {
+    try {
+      if (!editUser.name || !editUser.email || !editUser.idNumber) {
+        alert('Please fill in all required fields');
+        return;
+      }
 
+      const res = await fetch(`${API_BASE_URL}/api/users/${editUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editUser.name,
+          email: editUser.email,
+          idNumber: editUser.idNumber,
+          role: editUser.role,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed to update user');
+
+      setUsers(users.map((u) => (u.id === editUser.id ? data : u)));
+      setEditingUser(false);
+      setEditUser(emptyEditUser);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Failed to update user');
+    }
+  };
+
+  const toggleUserActive = async (user) => {
+    try {
+      const action = user.isActive === false ? 'activate' : 'deactivate';
+      const res = await fetch(`${API_BASE_URL}/api/users/${user.id}/${action}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || `Failed to ${action} user`);
+
+      setUsers(users.map((u) => (u.id === user.id ? data : u)));
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Failed to update user status');
+    }
+  };
 
   const roles = ['all', 'client', 'therapist', 'admin'];
-  const filtered = filterRole === 'all' ? users : users.filter((u) => u.role === filterRole);
+  const filtered = filterRole === 'all' ? users : users.filter((u) => normalizeRole(u.role) === filterRole);
 
   const totalUsers = users.length;
-  const clientCount = users.filter((u) => u.role === 'client').length;
-  const therapistCount = users.filter((u) => u.role === 'therapist').length;
-  const adminCount = users.filter((u) => u.role === 'admin').length;
+  const clientCount = users.filter((u) => normalizeRole(u.role) === 'client').length;
+  const therapistCount = users.filter((u) => normalizeRole(u.role) === 'therapist').length;
+  const adminCount = users.filter((u) => normalizeRole(u.role) === 'admin').length;
 
-return (
-  <>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <div style={styles.app}>
-      <main style={styles.main}>
-        <div style={styles.content}>
-
-          {/* Stats */}
-          <div style={styles.statsGrid}>
-            <div
-              style={styles.statCard(colors.deepTeal)}
-              onClick={() => setFilterRole('all')}
-              className="clickable-card"
-            >
-              <div style={styles.statLabel}>Total Users</div>
-              <div style={styles.statValue(colors.deepTeal)}>{totalUsers}</div>
-              <div style={styles.statSub}>All registered accounts</div>
-            </div>
-            <div
-              style={styles.statCard(colors.sage)}
-              onClick={() => setFilterRole('client')}
-              className="clickable-card"
-            >
-              <div style={styles.statLabel}>Clients</div>
-              <div style={styles.statValue(colors.deepTeal)}>{clientCount}</div>
-              <div style={styles.statSub}>Active patient accounts</div>
-            </div>
-            <div
-              style={styles.statCard('#3730A3')}
-              onClick={() => setFilterRole('therapist')}
-              className="clickable-card"
-            >
-              <div style={styles.statLabel}>Therapists</div>
-              <div style={styles.statValue('#3730A3')}>{therapistCount}</div>
-              <div style={styles.statSub}>Registered practitioners</div>
-            </div>
-            <div
-              style={styles.statCard('#B7791F')}
-              onClick={() => setFilterRole('admin')}
-              className="clickable-card"
-            >
-              <div style={styles.statLabel}>Admins</div>
-              <div style={styles.statValue('#B7791F')}>{adminCount}</div>
-              <div style={styles.statSub}>System administrators</div>
-            </div>
-          </div>
-
-          {/* Users Table */}
-          <div style={styles.card}>
-            <div style={styles.sectionHeader}>
-              <div style={styles.cardTitle}>User Management</div>
-              <button style={styles.primaryBtn} onClick={() => setShowModal(true)}>
-                + Add User
-              </button>
+  return (
+    <>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+      />
+      <div style={styles.app}>
+        <main style={styles.main}>
+          <div style={styles.content}>
+            <div style={styles.statsGrid}>
+              <div style={styles.statCard(colors.deepTeal)} onClick={() => setFilterRole('all')}>
+                <div style={styles.statLabel}>Total Users</div>
+                <div style={styles.statValue(colors.deepTeal)}>{totalUsers}</div>
+                <div style={styles.statSub}>All registered accounts</div>
+              </div>
+              <div style={styles.statCard(colors.sage)} onClick={() => setFilterRole('client')}>
+                <div style={styles.statLabel}>Clients</div>
+                <div style={styles.statValue(colors.deepTeal)}>{clientCount}</div>
+                <div style={styles.statSub}>Active patient accounts</div>
+              </div>
+              <div style={styles.statCard('#3730A3')} onClick={() => setFilterRole('therapist')}>
+                <div style={styles.statLabel}>Therapists</div>
+                <div style={styles.statValue('#3730A3')}>{therapistCount}</div>
+                <div style={styles.statSub}>Registered practitioners</div>
+              </div>
+              <div style={styles.statCard('#B7791F')} onClick={() => setFilterRole('admin')}>
+                <div style={styles.statLabel}>Admins</div>
+                <div style={styles.statValue('#B7791F')}>{adminCount}</div>
+                <div style={styles.statSub}>System administrators</div>
+              </div>
             </div>
 
-            {/* Role Filter Tabs */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '4px',
-                padding: '1.25rem 2rem 0',
-                borderBottom: `1px solid ${colors.sand}`,
-                backgroundColor: colors.white,
-              }}
-            >
-              {roles.map((role) => {
-                const active = filterRole === role;
-                return (
-                  <button
-                    key={role}
-                    onClick={() => setFilterRole(role)}
-                    style={{
-                      padding: '0.55rem 1.5rem',
-                      fontSize: '0.85rem',
-                      fontWeight: active ? '600' : '400',
-                      color: active ? colors.deepTeal : colors.sage,
-                      backgroundColor: active ? colors.mint : 'transparent',
-                      border: 'none',
-                      borderRadius: '8px 8px 0 0',
-                      cursor: 'pointer',
-                      letterSpacing: '0.03em',
-                      transition: 'all 0.2s',
-                      fontFamily: '"DM Sans", sans-serif',
-                      borderBottom: active ? `3px solid ${colors.deepTeal}` : '3px solid transparent',
-                      boxShadow: active ? 'inset 0 -2px 0 0 rgba(0,35,36,0.2)' : 'none',
-                    }}
-                  >
-                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                  </button>
-                );
-              })}
-            </div>
+            <div style={styles.card}>
+              <div style={styles.sectionHeader}>
+                <div style={styles.cardTitle}>User Management</div>
+                <button style={styles.primaryBtn} onClick={() => setShowModal(true)}>
+                  + Add User
+                </button>
+              </div>
 
-            <div style={{ overflowX: 'auto', padding: '0 0 0.5rem' }}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    {['User', 'Email', 'Role', 'Joined', 'Status', 'Actions'].map((h) => (
-                      <th key={h} style={styles.th}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '4px',
+                  padding: '1.25rem 2rem 0',
+                  borderBottom: `1px solid ${colors.sand}`,
+                  backgroundColor: colors.white,
+                }}
+              >
+                {roles.map((role) => {
+                  const active = filterRole === role;
+                  return (
+                    <button
+                      key={role}
+                      onClick={() => setFilterRole(role)}
+                      style={{
+                        padding: '0.55rem 1.5rem',
+                        fontSize: '0.85rem',
+                        fontWeight: active ? '600' : '400',
+                        color: active ? colors.deepTeal : colors.sage,
+                        backgroundColor: active ? colors.mint : 'transparent',
+                        border: 'none',
+                        borderRadius: '8px 8px 0 0',
+                        cursor: 'pointer',
+                        letterSpacing: '0.03em',
+                        fontFamily: '"DM Sans", sans-serif',
+                        borderBottom: active ? `3px solid ${colors.deepTeal}` : '3px solid transparent',
+                      }}
+                    >
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ overflowX: 'auto', padding: '0 0 0.5rem' }}>
+                <table style={styles.table}>
+                  <thead>
                     <tr>
-                      <td
-                        colSpan={6}
-                        style={{
-                          ...styles.td,
-                          textAlign: 'center',
-                          color: colors.sage,
-                          padding: '2.5rem',
-                          fontStyle: 'italic',
-                        }}
-                      >
-                        No users found
-                      </td>
+                      {['User', 'Email', 'Role', 'Joined', 'Status', 'Actions'].map((h) => (
+                        <th key={h} style={styles.th}>{h}</th>
+                      ))}
                     </tr>
-                  ) : (
-                    filtered.map((u) => (
-                      <tr
-                        key={u.id}
-                        style={{ transition: 'background 0.15s' }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#faf9f7')}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                      >
-                        <td style={styles.td}>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={styles.avatar}>{getInitials(u.name)}</div>
-                            <div>
-                              <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>{u.name}</div>
-                              <div style={{ fontSize: '0.72rem', color: colors.sage }}>ID: {u.id}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={styles.td}>{u.email}</td>
-                        <td style={styles.td}>
-                          <span style={styles.badge(u.role)}>{u.role}</span>
-                        </td>
-                        <td style={styles.td}>{formatDate(u.createdAt)}</td>
-                        <td style={styles.td}>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              backgroundColor: '#276749',
-                              marginRight: '6px',
-                              verticalAlign: 'middle',
-                            }}
-                          />
-                          <span style={{ fontSize: '0.78rem', color: '#276749', fontWeight: '600' }}>Active</span>
-                        </td>
-                        <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button style={styles.actionBtn('edit')}>✎ Edit</button>
-                            <button
-                              style={styles.actionBtn('deactivate')}
-                              onClick={() => deactivateUser(u.id)}
-                            >
-                              ✕ Deactivate
-                            </button>
-                          </div>
+                  </thead>
+                  <tbody>
+                    {filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ ...styles.td, textAlign: 'center', color: colors.sage, padding: '2.5rem', fontStyle: 'italic' }}>
+                          No users found
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      filtered.map((u) => (
+                        <tr
+                          key={u.id}
+                          style={{ transition: 'background 0.15s' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#faf9f7')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <td style={styles.td}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <div style={styles.avatar}>{getInitials(u.name)}</div>
+                              <div>
+                                <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>{u.name}</div>
+                                <div style={{ fontSize: '0.72rem', color: colors.sage }}>ID: {u.id}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={styles.td}>{u.email}</td>
+                          <td style={styles.td}>
+                            <span style={styles.badge(u.role)}>{normalizeRole(u.role)}</span>
+                          </td>
+                          <td style={styles.td}>{formatDate(u.createdAt)}</td>
+                          <td style={styles.td}>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                backgroundColor: u.isActive === false ? '#C53030' : '#276749',
+                                marginRight: '6px',
+                                verticalAlign: 'middle',
+                              }}
+                            />
+                            <span style={{ fontSize: '0.78rem', color: u.isActive === false ? '#C53030' : '#276749', fontWeight: '600' }}>
+                              {u.isActive === false ? 'Inactive' : 'Active'}
+                            </span>
+                          </td>
+                          <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button style={styles.actionBtn('edit')} onClick={() => openEditModal(u)}>
+                                Edit
+                              </button>
+                              <button style={styles.actionBtn('deactivate')} onClick={() => toggleUserActive(u)}>
+                                {u.isActive === false ? 'Activate' : 'Deactivate'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
-
-    {/* Add User Modal */}
-    {showModal && (
-      <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-        <div style={styles.modal}>
-          <div style={styles.modalHeader}>
-            <div style={styles.modalTitle}>Add New User</div>
-            <button style={styles.modalClose} onClick={() => setShowModal(false)}>✕</button>
-          </div>
-
-          <div style={styles.modalBody}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Full Name</label>
-              <input
-                style={styles.input}
-                placeholder="e.g. Jane Doe"
-                value={newUser.name}
-                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Email Address</label>
-              <input
-                style={styles.input}
-                placeholder="e.g. jane@example.com"
-                type="email"
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Password</label>
-              <input
-                style={styles.input}
-                placeholder="Set a secure password"
-                type="password"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Role</label>
-              <select
-                style={styles.select}
-                value={newUser.role}
-                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-              >
-                <option value="client">Client</option>
-                <option value="therapist">Therapist</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={styles.modalFooter}>
-            <button style={styles.cancelBtn} onClick={() => setShowModal(false)}>Cancel</button>
-            <button style={styles.primaryBtn} onClick={addUser}>Add User</button>
-          </div>
-        </div>
+        </main>
       </div>
-    )}
-  </>
-);
 
+      {showModal && (
+        <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
+          <div style={styles.modal}>
+            <div style={styles.modalHeader}>
+              <div style={styles.modalTitle}>Add New User</div>
+              <button style={styles.modalClose} onClick={() => setShowModal(false)}>X</button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>First Name</label>
+                <input style={styles.input} value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Surname</label>
+                <input style={styles.input} value={newUser.surname} onChange={(e) => setNewUser({ ...newUser, surname: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Email Address</label>
+                <input style={styles.input} type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Password</label>
+                <input style={styles.input} type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>ID Number</label>
+                <input style={styles.input} value={newUser.idNumber} onChange={(e) => setNewUser({ ...newUser, idNumber: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Role</label>
+                <select style={styles.select} value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>
+                  <option value="client">Client</option>
+                  <option value="therapist">Therapist</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={styles.modalFooter}>
+              <button style={styles.cancelBtn} onClick={() => setShowModal(false)}>Cancel</button>
+              <button style={styles.primaryBtn} onClick={addUser}>Add User</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingUser && (
+        <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && setEditingUser(false)}>
+          <div style={styles.modal}>
+            <div style={styles.modalHeader}>
+              <div style={styles.modalTitle}>Edit User</div>
+              <button style={styles.modalClose} onClick={() => setEditingUser(false)}>X</button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Name</label>
+                <input style={styles.input} value={editUser.name} onChange={(e) => setEditUser({ ...editUser, name: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Email Address</label>
+                <input style={styles.input} type="email" value={editUser.email} onChange={(e) => setEditUser({ ...editUser, email: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>ID Number</label>
+                <input style={styles.input} value={editUser.idNumber} onChange={(e) => setEditUser({ ...editUser, idNumber: e.target.value })} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Role</label>
+                <select style={styles.select} value={editUser.role} onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}>
+                  <option value="client">Client</option>
+                  <option value="therapist">Therapist</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={styles.modalFooter}>
+              <button style={styles.cancelBtn} onClick={() => setEditingUser(false)}>Cancel</button>
+              <button style={styles.primaryBtn} onClick={saveEditedUser}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }

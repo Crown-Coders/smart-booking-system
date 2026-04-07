@@ -93,14 +93,13 @@ const MENU_BY_ROLE = {
     { name: "Dashboard", path: "/dashboard" },
     { name: "My Appointments", path: "/appointments" },
     { name: "Calendar", path: "/calendar" },
-    { name: "Messages", path: "/messages" },
+    { name: "Services", path: "/services" },
       // AI Chatbot removed – now accessible via floating button
   ],
 
   superuser: [
     { name: "Dashboard", path: "/admin" },
     { name: "Users", path: "/admin/users" },
-    { name: "Therapists", path: "/admin/therapists" },
     { name: "Reports", path: "/admin/reports" },
     { name: "System Settings", path: "/admin/settings" },
     // AI Chatbot removed – now accessible via floating button
