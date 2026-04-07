@@ -19,13 +19,34 @@ const chatbot = require('./routes/chatbot');
  
 const app = express();
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
  
-// Configure CORS
+const allowedOrigins = new Set([
+  'https://smart-booking-system-8cgy.onrender.com'
+]);
+
+const isLocalDevOrigin = (origin) => {
+  if (!origin) return true;
+
+  try {
+    const { protocol, hostname } = new URL(origin);
+    return (
+      (protocol === 'http:' || protocol === 'https:') &&
+      (hostname === 'localhost' || hostname === '127.0.0.1')
+    );
+  } catch {
+    return false;
+  }
+};
+
+// Allow local web clients plus deployed frontend while keeping credentials enabled.
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://smart-booking-system-8cgy.onrender.com'
-  ],
+  origin(origin, callback) {
+    if (allowedOrigins.has(origin) || isLocalDevOrigin(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -63,17 +84,46 @@ const ensureSuperUser = async () => {
     console.error("Failed to create superuser:", error);
   }
 };
+
+const ensureLocalSqliteColumns = async () => {
+  if (process.env.DATABASE_URL) {
+    return;
+  }
+
+  const queryInterface = db.sequelize.getQueryInterface();
+
+  const ensureColumn = async (tableName, columnName, definition) => {
+    const table = await queryInterface.describeTable(tableName);
+    if (!table[columnName]) {
+      await queryInterface.addColumn(tableName, columnName, definition);
+      console.log(`Added missing column ${tableName}.${columnName}`);
+    }
+  };
+
+  await ensureColumn('AvailabilitySlots', 'bookingId', { type: db.Sequelize.INTEGER, allowNull: true });
+  await ensureColumn('Users', 'cardHolderName', { type: db.Sequelize.STRING, allowNull: true });
+  await ensureColumn('Users', 'cardBrand', { type: db.Sequelize.STRING, allowNull: true });
+  await ensureColumn('Users', 'cardLast4', { type: db.Sequelize.STRING, allowNull: true });
+  await ensureColumn('Users', 'cardExpiryMonth', { type: db.Sequelize.STRING, allowNull: true });
+  await ensureColumn('Users', 'cardExpiryYear', { type: db.Sequelize.STRING, allowNull: true });
+  await ensureColumn('TherapistProfiles', 'typeOfPractice', { type: db.Sequelize.STRING, allowNull: true });
+  await ensureColumn('TherapistProfiles', 'workingDays', { type: db.Sequelize.STRING, allowNull: true, defaultValue: '1,2,3,4,5' });
+  await ensureColumn('TherapistProfiles', 'workDayStart', { type: db.Sequelize.STRING, allowNull: true, defaultValue: '08:00' });
+  await ensureColumn('TherapistProfiles', 'workDayEnd', { type: db.Sequelize.STRING, allowNull: true, defaultValue: '17:00' });
+};
  
 // Sync DB, ensure superuser, and start server
 const startServer = async () => {
   try {
-    // Force rebuild the database from your models
-    await db.sequelize.sync({ force: true });
-    console.log("Database synced (all tables recreated)");
+    await db.sequelize.sync();
+    await ensureLocalSqliteColumns();
+    console.log("Database synced");
 
     await ensureSuperUser(); // <-- create superuser if missing
 
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}`);
+    });
   } catch (err) {
     console.error("Failed to sync DB or start server:", err);
   }

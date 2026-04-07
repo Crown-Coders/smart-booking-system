@@ -4,6 +4,35 @@ const router = express.Router();
 const { TherapistProfile, User } = require("../models");
 const bcrypt = require('bcrypt');
 
+const serializeTherapistProfile = async (profile) => {
+  const user = await User.findByPk(profile.userId, {
+    attributes: ['id', 'name', 'email', 'idNumber', 'role']
+  });
+
+  return {
+    id: profile.id,
+    specialization: profile.specialization,
+    yearsOfExperience: profile.yearsOfExperience,
+    licenseNumber: profile.licenseNumber,
+    typeOfPractice: profile.typeOfPractice,
+    qualification: profile.qualification,
+    bio: profile.bio,
+    image: profile.image,
+    workingDays: profile.workingDays || '1,2,3,4,5',
+    workDayStart: profile.workDayStart || '08:00',
+    workDayEnd: profile.workDayEnd || '17:00',
+    createdAt: profile.createdAt,
+    updatedAt: profile.updatedAt,
+    user: user ? {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      idNumber: user.idNumber,
+      role: user.role
+    } : null
+  };
+};
+
 // GET all therapists - using manual fetching (NO include)
 router.get('/', async (req, res) => {
   try {
@@ -15,30 +44,7 @@ router.get('/', async (req, res) => {
 
     // For each profile, fetch the corresponding user manually
     const therapists = await Promise.all(
-      therapistProfiles.map(async (profile) => {
-        const user = await User.findByPk(profile.userId, {
-          attributes: ['id', 'name', 'email', 'idNumber', 'role']
-        });
-
-        return {
-          id: profile.id,
-          specialization: profile.specialization,
-          yearsOfExperience: profile.yearsOfExperience,
-          licenseNumber: profile.licenseNumber,
-          typeOfPractice: profile.typeOfPractice,
-          bio: profile.bio,
-          image: profile.image,
-          createdAt: profile.createdAt,
-          updatedAt: profile.updatedAt,
-          user: user ? {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            idNumber: user.idNumber,
-            role: user.role
-          } : null
-        };
-      })
+      therapistProfiles.map((profile) => serializeTherapistProfile(profile))
     );
 
     console.log('Sending therapists data');
@@ -62,7 +68,10 @@ router.post('/', async (req, res) => {
       licenseNumber,
       typeOfPractice,
       bio,
-      image
+      image,
+      workingDays,
+      workDayStart,
+      workDayEnd,
     } = req.body;
 
     const idNumber = '8901015009087';
@@ -94,28 +103,14 @@ router.post('/', async (req, res) => {
       yearsOfExperience,
       licenseNumber,
       typeOfPractice,
+      workingDays: workingDays || '1,2,3,4,5',
+      workDayStart: workDayStart || '08:00',
+      workDayEnd: workDayEnd || '17:00',
       bio,
       image: image || null
     });
 
-    const fullProfile = {
-      id: therapistProfile.id,
-      specialization: therapistProfile.specialization,
-      yearsOfExperience: therapistProfile.yearsOfExperience,
-      licenseNumber: therapistProfile.licenseNumber,
-      typeOfPractice: therapistProfile.typeOfPractice,
-      bio: therapistProfile.bio,
-      image: therapistProfile.image,
-      createdAt: therapistProfile.createdAt,
-      updatedAt: therapistProfile.updatedAt,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        idNumber: user.idNumber,
-        role: user.role
-      }
-    };
+    const fullProfile = await serializeTherapistProfile(therapistProfile);
 
     res.status(201).json({
       message: 'Therapist created successfully',
@@ -138,6 +133,70 @@ router.delete('/:id', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET therapist by user ID
+router.get('/by-user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const therapistProfile = await TherapistProfile.findOne({ where: { userId } });
+    if (!therapistProfile) return res.status(404).json({ message: 'Therapist not found' });
+    res.json({ therapistId: therapistProfile.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET therapist profile by user ID
+router.get('/profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const therapistProfile = await TherapistProfile.findOne({ where: { userId } });
+    if (!therapistProfile) return res.status(404).json({ message: 'Therapist profile not found' });
+    res.json(await serializeTherapistProfile(therapistProfile));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.patch('/profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const therapistProfile = await TherapistProfile.findOne({ where: { userId } });
+    if (!therapistProfile) return res.status(404).json({ message: 'Therapist profile not found' });
+
+    const {
+      specialization,
+      yearsOfExperience,
+      licenseNumber,
+      qualification,
+      bio,
+      typeOfPractice,
+      workingDays,
+      workDayStart,
+      workDayEnd,
+      image,
+    } = req.body;
+
+    if (specialization !== undefined) therapistProfile.specialization = specialization;
+    if (yearsOfExperience !== undefined) therapistProfile.yearsOfExperience = yearsOfExperience;
+    if (licenseNumber !== undefined) therapistProfile.licenseNumber = licenseNumber;
+    if (qualification !== undefined) therapistProfile.qualification = qualification;
+    if (bio !== undefined) therapistProfile.bio = bio;
+    if (typeOfPractice !== undefined) therapistProfile.typeOfPractice = typeOfPractice;
+    if (workingDays !== undefined) therapistProfile.workingDays = workingDays;
+    if (workDayStart !== undefined) therapistProfile.workDayStart = workDayStart;
+    if (workDayEnd !== undefined) therapistProfile.workDayEnd = workDayEnd;
+    if (image !== undefined) therapistProfile.image = image;
+
+    await therapistProfile.save();
+    res.json(await serializeTherapistProfile(therapistProfile));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to update therapist profile' });
   }
 });
 

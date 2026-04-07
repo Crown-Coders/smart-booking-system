@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // e.g., TherapistProfile.belongsTo(models.User, { foreignKey: 'userId' });
+      TherapistProfile.belongsTo(models.User, { foreignKey: 'userId' });
     }
   }
 
@@ -21,6 +21,19 @@ module.exports = (sequelize, DataTypes) => {
       yearsOfExperience: DataTypes.INTEGER,
       licenseNumber: DataTypes.STRING,
       specialization: DataTypes.STRING,
+      typeOfPractice: DataTypes.STRING,
+      workingDays: {
+        type: DataTypes.STRING,
+        defaultValue: '1,2,3,4,5',
+      },
+      workDayStart: {
+        type: DataTypes.STRING,
+        defaultValue: '08:00',
+      },
+      workDayEnd: {
+        type: DataTypes.STRING,
+        defaultValue: '17:00',
+      },
       bio: DataTypes.TEXT,
       image: DataTypes.STRING, // ✅ use DataTypes here, not Sequelize
     },

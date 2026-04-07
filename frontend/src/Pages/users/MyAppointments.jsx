@@ -5,13 +5,11 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 function MyAppointments() {
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [therapists, setTherapists] = useState({});
   const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   
   const navigate = useNavigate();
@@ -133,49 +131,18 @@ function MyAppointments() {
     setShowViewModal(true);
   };
 
-  const handleCancel = (apt) => {
-    setSelectedAppointment(apt);
-    setShowCancelModal(true);
-  };
-
   const handlePay = (apt) => {
     setSelectedAppointment(apt);
     setShowPaymentModal(true);
   };
 
-  const confirmCancel = async () => {
-    setCancelling(true);
-    
-    try {
-      const token = localStorage.getItem("token");
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/bookings/${selectedAppointment.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.ok) {
-        setAppointments(appointments.filter(apt => apt.id !== selectedAppointment.id));
-        setShowCancelModal(false);
-        alert("Appointment cancelled successfully!");
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to delete booking:", errorData);
-        alert("Failed to cancel appointment. Please try again.");
-      }
-    } catch (err) {
-      console.error("Error cancelling appointment:", err);
-      alert("An error occurred while cancelling. Please try again.");
-    } finally {
-      setCancelling(false);
-      setSelectedAppointment(null);
-    }
+  const handleReschedule = (apt) => {
+    navigate("/calendar", {
+      state: {
+        appointment: apt,
+        therapist: therapists[apt.therapistId],
+      },
+    });
   };
 
   const confirmPayment = async () => {
@@ -222,6 +189,13 @@ function MyAppointments() {
   // Check if appointment is confirmed (admin approved)
   const isConfirmed = (status) => {
     return status === 'confirmed' || status === 'CONFIRMED' || status === 'completed' || status === 'COMPLETED';
+  };
+
+  const canReschedule = (apt) => {
+    if (!apt) return false;
+    if (['COMPLETED', 'CANCELLED', 'completed', 'cancelled'].includes(apt.status)) return false;
+    const sessionStart = new Date(`${apt.bookingDate}T${apt.startTime}`);
+    return sessionStart.getTime() - Date.now() >= 24 * 60 * 60 * 1000;
   };
 
   // Get badge class based on status
@@ -537,13 +511,14 @@ function MyAppointments() {
                             Pay Now
                           </button>
                         )}
-                        <button 
-                          className="btn-soft-danger" 
-                          onClick={() => handleCancel(apt)}
-                          disabled={apt.status === 'CANCELLED' || apt.status === 'COMPLETED' || cancelling}
-                        >
-                          Cancel
-                        </button>
+                        {canReschedule(apt) && (
+                          <button
+                            className="btn-soft-outline"
+                            onClick={() => handleReschedule(apt)}
+                          >
+                            Reschedule
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -589,6 +564,9 @@ function MyAppointments() {
                   <p><strong>Description:</strong> {selectedAppointment.description}</p>
                 )}
                 <p><strong>Booked on:</strong> {new Date(selectedAppointment.createdAt).toLocaleDateString()}</p>
+                <p style={{ color: '#8A5A00' }}>
+                  Rescheduling is only allowed at least 24 hours before the session. Cancellations and refunds are not allowed.
+                </p>
                 
                 {/* Status-specific messages */}
                 {needsPayment(selectedAppointment.status) && (
@@ -654,50 +632,6 @@ function MyAppointments() {
             )}
             <button className="btn-soft-outline" onClick={() => setShowViewModal(false)}>
               Close
-            </button>
-          </Modal.Footer>
-        </Modal>
-
-        {/* Cancel Modal */}
-        <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} centered>
-          <Modal.Header closeButton>
-            <Modal.Title>Confirm Cancellation</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            {selectedAppointment && (
-              <p>
-                Are you sure you want to cancel your appointment with{" "}
-                <strong>{getTherapistDisplayName(selectedAppointment.therapistId)}</strong> on{" "}
-                <strong>{formatDate(selectedAppointment.bookingDate)}</strong> at{" "}
-                <strong>{formatTimeRange(selectedAppointment.startTime, selectedAppointment.endTime)}</strong>?
-                <br /><br />
-                <span style={{ color: '#dc3545', fontWeight: '500' }}>
-                  This will permanently delete the booking from the system.
-                </span>
-              </p>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <button 
-              className="btn-soft-outline" 
-              onClick={() => setShowCancelModal(false)}
-              disabled={cancelling}
-            >
-              No, Keep It
-            </button>
-            <button 
-              className="btn-soft-danger" 
-              onClick={confirmCancel}
-              disabled={cancelling}
-            >
-              {cancelling ? (
-                <>
-                  <span className="spinner-small"></span>
-                  Cancelling...
-                </>
-              ) : (
-                'Yes, Cancel Booking'
-              )}
             </button>
           </Modal.Footer>
         </Modal>

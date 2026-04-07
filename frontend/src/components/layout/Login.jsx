@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo-mental.com.png";
 
-function Login() {
+function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -41,6 +41,12 @@ function Login() {
       // Save token and user
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      window.dispatchEvent(new Event("authchange"));
+
+      if (typeof onLoginSuccess === "function") {
+        onLoginSuccess(data.user);
+        return;
+      }
 
       // Redirect based on role
       if (data.user.role === "SUPERUSER" || data.user.role === "ADMIN") {
@@ -69,9 +75,11 @@ function Login() {
         <form onSubmit={handleSubmit}>
 
           <div className="input-group" style={{ marginBottom: "1.5rem" }}>
-            <label>Email</label>
+            <label htmlFor="login-email">Email</label>
             <input
+              id="login-email"
               type="email"
+              name="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -85,9 +93,11 @@ function Login() {
           </div>
 
           <div className="input-group" style={{ marginBottom: "1.5rem" }}>
-            <label>Password</label>
+            <label htmlFor="login-password">Password</label>
             <input
+              id="login-password"
               type="password"
+              name="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

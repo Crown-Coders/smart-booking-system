@@ -1,46 +1,40 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Mental.com",
+    "slug": "mental-com-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/favicon.ico",
-    "scheme": "mobile",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.nozwelo.mobile"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#002324"
-      },
-      "package": "com.nozwelo.mobile"
-    },
-    "web": {
-      "favicon": "./assets/images/logo.png"
-    },
+    "icon": "./assets/logo-mental.com.png",
+    "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#002324"
     },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#002324"
-        }
-      ]
+    "assetBundlePatterns": [
+      "**/*"
     ],
-    "experiments": {
-      "typedRoutes": true
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-mental.com.png",
+        "backgroundColor": "#002324"
+      },
+      "usesCleartextTraffic": true,
+      "package": "com.mentalcom.mobile"
+    },
+    "web": {
+      "favicon": "./assets/logo-mental.com.png"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2484349a-11e6-412b-be20-4efb3b08edca"
+      }
     }
   }
 }
