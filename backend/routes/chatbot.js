@@ -8,6 +8,26 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
+function getFallbackReply(history, firstName) {
+  const lastUserMessage = [...history]
+    .reverse()
+    .find((message) => message.role === "user")?.content?.toLowerCase() || "";
+
+  if (/price|cost|fee|session/i.test(lastUserMessage)) {
+    return `${firstName}, sessions are currently charged at R800 per hour. If you want, I can also help you find a therapist and choose a time slot.`;
+  }
+
+  if (/therapist|counsel|psychologist|specialist/i.test(lastUserMessage)) {
+    return `${firstName}, I can help you explore therapist options by specialty and guide you toward booking. Tell me what kind of support you are looking for, such as anxiety, trauma, couples support, or general counselling.`;
+  }
+
+  if (/book|appointment|session|calendar/i.test(lastUserMessage)) {
+    return `${firstName}, you can book a session by choosing a service, selecting a therapist, and then picking an available time slot in the calendar.`;
+  }
+
+  return `${firstName}, I can help with therapist options, bookings, session pricing, and simple wellbeing guidance right here.`;
+}
+
 /**
  * --- 1. TOOLS DEFINITION ---
  * These allow the AI to interact with your database.
@@ -186,6 +206,10 @@ ${therapistData.join("\n")}
     ];
     // API Call to Groq
     //This allows you to stub callLLM in tests
+    if (!process.env.GROQ_API_KEY) {
+      return res.json({ reply: getFallbackReply(safeHistory, firstName) });
+    }
+
     const completion = await callLLM(messages, tools);
 
     const responseMessage = completion.choices[0].message;
@@ -228,7 +252,8 @@ ${therapistData.join("\n")}
 
   } catch (error) {
     console.error("Chatbot Route Error:", error);
-    res.status(500).json({ error: "I'm having a little trouble connecting right now." });
+    const safeHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+    res.json({ reply: getFallbackReply(safeHistory, "there") });
   }
 });
  module.exports = router;

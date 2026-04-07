@@ -1,7 +1,8 @@
 // src/App.jsx
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
+import logo from "./assets/images/logo-mental.com.png";
 
 // Layout components
 import Sidebar from "./components/layout/Sidebar";
@@ -55,9 +56,38 @@ const isDashboardRoute = (pathname) => {
   return dashboardPaths.some(path => pathname.startsWith(path));
 };
 
+const readStoredAuth = () => {
+  try {
+    const rawUser = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    const user = rawUser ? JSON.parse(rawUser) : null;
+    return {
+      user,
+      token,
+      isAuthenticated: Boolean(token && user),
+    };
+  } catch {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    return {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+    };
+  }
+};
+
+const getDashboardPath = (role) => {
+  if (role === "SUPERUSER" || role === "ADMIN") return "/admin";
+  if (role === "THERAPIST") return "/therapist/dashboard";
+  return "/dashboard";
+};
+
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [authState, setAuthState] = useState(() => readStoredAuth());
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -65,10 +95,8 @@ function AppLayout() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const toggleChat = () => setIsChatOpen(prev => !prev);
 
-  // Get user and auth info from localStorage
-  const user = JSON.parse(localStorage.getItem("user"));
-  const token = localStorage.getItem("token");
-  const isAuthenticated = !!token;
+  const { user, isAuthenticated } = authState;
+  const dashboardPath = useMemo(() => getDashboardPath(user?.role), [user?.role]);
 
   // Show navbar on all pages
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
@@ -82,26 +110,63 @@ function AppLayout() {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
+  useEffect(() => {
+    const syncAuth = () => setAuthState(readStoredAuth());
+    syncAuth();
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("authchange", syncAuth);
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("authchange", syncAuth);
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSplash(false), 1200);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const shouldShiftContent = showSidebar && isAuthenticated && (isMobile ? sidebarOpen : true);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    window.dispatchEvent(new Event("authchange"));
     navigate('/');
   };
 
   const handleLoginSuccess = () => {
-    navigate('/dashboard');
+    const latestAuth = readStoredAuth();
+    setAuthState(latestAuth);
+    navigate(getDashboardPath(latestAuth.user?.role));
+  };
+
+  const handleRegisterSuccess = () => {
+    navigate('/login');
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {showSplash && (
+        <div className="app-splash" aria-hidden="true">
+          <div className="app-splash__orb" />
+          <div className="app-splash__card">
+            <div className="app-splash__logo-ring">
+              <img src={logo} alt="" className="app-splash__logo" />
+            </div>
+            <p className="app-splash__eyebrow">MENTAL.COM</p>
+            <h1 className="app-splash__title">Care that feels calm from the first click.</h1>
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
       <Navbar
         showSidebarToggle={showSidebar && isAuthenticated}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
+        dashboardPath={dashboardPath}
       />
 
       {/* Sidebar (only visible if logged in) */}
@@ -125,7 +190,7 @@ function AppLayout() {
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="/register" element={<Register onRegisterSuccess={handleLoginSuccess} />} />
+          <Route path="/register" element={<Register onRegisterSuccess={handleRegisterSuccess} />} />
 
           {/* Therapist routes */}
           <Route path="/therapist/dashboard" element={<TherapistDashboard />} />

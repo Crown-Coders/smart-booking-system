@@ -2,9 +2,6 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  /* Leave color/background to the app so pages can control their own look */
   color: initial;
   background-color: initial;
 
@@ -24,11 +21,13 @@ a:hover {
   color: #535bf2;
 }
 
+html,
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   background-color: #f3f4f6;
+  overflow-x: hidden;
 }
 
 h1 {
@@ -48,26 +47,7 @@ button {
   transition: border-color 0.25s;
 }
 
-button:hover {
-  border-color: #646cff;
-}
-
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
 }
