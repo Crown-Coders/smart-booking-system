@@ -64,6 +64,9 @@ const canRescheduleBooking = (booking) => {
   return sessionStart.getTime() - Date.now() >= 24 * 60 * 60 * 1000;
 };
 
+// ============= email sending function ===============
+
+// format the time and date for the email content
 const formatBookingDateTime = (booking) => ({
   date: new Date(booking.bookingDate).toLocaleDateString("en-ZA", {
     weekday: "long",
@@ -73,7 +76,7 @@ const formatBookingDateTime = (booking) => ({
   }),
   time: `${booking.startTime} - ${booking.endTime}`,
 });
-
+// sends email to both client and therapist when a booking is approved
 const sendApprovalEmails = async (booking) => {
   const client = await User.findByPk(booking.clientId);
   const therapistProfile = await TherapistProfile.findByPk(booking.therapistId);
@@ -87,7 +90,7 @@ const sendApprovalEmails = async (booking) => {
       htmlContent: `<h3>Hi ${client.name},</h3><p>Your session has been approved.</p><p><strong>Date:</strong> ${date}</p><p><strong>Time:</strong> ${time}</p>`,
     });
   }
-
+  // get booked therapist email and send approval email to them as well
   if (therapistUser?.email) {
     await sendEmail({
       to: therapistUser.email,
@@ -96,7 +99,7 @@ const sendApprovalEmails = async (booking) => {
     });
   }
 };
-
+// lock the availability slots for a booking when it is confirmed, with a fallback for legacy slot records
 const markBookingSlotsBooked = async (booking, transaction) => {
   const [linkedSlotCount] = await AvailabilitySlot.update(
     { isBooked: true },
