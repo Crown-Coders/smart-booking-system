@@ -87,7 +87,6 @@ const ensureSuperUser = async () => {
 const startServer = async () => {
   try {
     await db.sequelize.sync({alter: true});
-    await ensureLocalSqliteColumns();
     console.log("Database synced");
 
     await ensureSuperUser(); // <-- create superuser if missing
