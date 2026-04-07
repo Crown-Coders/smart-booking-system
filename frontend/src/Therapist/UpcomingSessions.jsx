@@ -5,12 +5,13 @@ import "./UpcomingSessions.css";
 const UpcomingSessions = () => {
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   // Fetch upcoming sessions from backend
   useEffect(() => {
-  const fetchSessions = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
+    const fetchSessions = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
 
       // ✅ STEP 1
       const therapistRes = await fetch(
@@ -25,25 +26,26 @@ const UpcomingSessions = () => {
         `${import.meta.env.VITE_API_URL}/api/bookings/therapist/${therapistId}`
       );
 
-      const data = await response.json();
+        const data = await response.json();
 
-      const today = new Date().toISOString().split("T")[0];
+        const parseDateOnly = (value) => new Date(`${value}T00:00:00`);
+        const today = parseDateOnly(new Date().toISOString().split("T")[0]);
 
-      const upcoming = data.filter(
-        (b) => new Date(b.bookingDate) >= new Date(today)
-      );
+        const upcoming = (Array.isArray(data) ? data : []).filter(
+          (b) => b.bookingDate && parseDateOnly(b.bookingDate) >= today
+        );
 
-      setUpcomingSessions(upcoming);
+        setUpcomingSessions(upcoming);
+        setSelectedId(upcoming.length > 0 ? upcoming[0].id : null);
+      } catch (error) {
+        console.error("Error fetching upcoming sessions:", error);
+        setUpcomingSessions([]);
+        setSelectedId(null);
+      }
+    };
 
-      if (upcoming.length > 0) setSelectedId(upcoming[0].id);
-
-    } catch (error) {
-      console.error("Error fetching upcoming sessions:", error);
-    }
-  };
-
-  fetchSessions();
-}, []);
+    fetchSessions();
+  }, [apiBaseUrl]);
 
   const selectedSession = upcomingSessions.find((session) => session.id === selectedId);
 
@@ -63,7 +65,7 @@ const UpcomingSessions = () => {
         </div>
         <div className="upcoming-sessions__chip">
           <Timer size={15} />
-          <span>Next Session: {upcomingSessions[0]?.time ?? "N/A"}</span>
+          <span>Next Session: {upcomingSessions[0]?.startTime ?? "N/A"}</span>
         </div>
       </div>
 
