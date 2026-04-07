@@ -1,39 +1,54 @@
-const SibApiV3Sdk = require('sib-api-v3-sdk');
-require('dotenv').config();
+require("dotenv").config();
+const nodemailer = require("nodemailer");
 
-// Initialize Brevo client
-const defaultClient = SibApiV3Sdk.ApiClient.instance;
-defaultClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+const useTls = String(process.env.EMAIL_USE_TLS || "true").toLowerCase() === "true";
 
-// Transactional Emails API
-const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || "smtp.gmail.com",
+  port: Number(process.env.EMAIL_PORT || 587),
+  secure: Number(process.env.EMAIL_PORT || 587) === 465,
+  auth: {
+    user: process.env.EMAIL_HOST_USER,
+    pass: process.env.EMAIL_HOST_PASSWORD,
+  },
+  requireTLS: useTls,
+  tls: useTls
+    ? {
+        rejectUnauthorized: false,
+      }
+    : undefined,
+});
 
-/**
- * Send transactional email
- * @param {Object} options
- * @param {string} options.to - recipient email
- * @param {string} options.subject - email subject
- * @param {string} options.htmlContent - email body HTML
- */
-async function sendEmail({ to, subject, htmlContent }) {
-  const email = new SibApiV3Sdk.SendSmtpEmail({
-    to: [{ email: to }],
-    sender: {
-      name: process.env.BREVO_SENDER_NAME,
-      email: process.env.BREVO_SENDER_EMAIL,
-    },
+async function sendEmail(optionsOrTo, maybeSubject, maybeHtmlContent) {
+  const emailOptions =
+    typeof optionsOrTo === "object"
+      ? optionsOrTo
+      : {
+          to: optionsOrTo,
+          subject: maybeSubject,
+          htmlContent: maybeHtmlContent,
+        };
+
+  const { to, subject, htmlContent } = emailOptions;
+
+  if (!to || !subject || !htmlContent) {
+    throw new Error("Missing required email fields");
+  }
+
+  if (!process.env.EMAIL_HOST_USER || !process.env.EMAIL_HOST_PASSWORD) {
+    console.warn("Email credentials are missing. Skipping email send.", { to, subject });
+    return null;
+  }
+
+  const response = await transporter.sendMail({
+    from: process.env.DEFAULT_FROM_EMAIL || process.env.EMAIL_HOST_USER,
+    to,
     subject,
-    htmlContent,
+    html: htmlContent,
   });
 
-  try {
-    const response = await tranEmailApi.sendTransacEmail(email);
-    console.log('✅ Email sent:', response.messageId);
-    return response;
-  } catch (err) {
-    console.error('❌ Email sending error:', err.response ? err.response.body : err);
-    throw err;
-  }
+  console.log("Email sent:", response.messageId);
+  return response;
 }
 
 module.exports = sendEmail;

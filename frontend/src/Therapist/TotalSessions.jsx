@@ -4,6 +4,8 @@ import "./TotalSessions.css";
 
 const TotalSessions = () => {
   const [completedSessions, setCompletedSessions] = useState([]);
+  const isPaidSession = (session) =>
+    session?.payment?.status === "COMPLETED" || session?.status === "CONFIRMED";
 
   useEffect(() => {
   const fetchSessions = async () => {
@@ -25,8 +27,7 @@ const TotalSessions = () => {
 
       const data = await res.json();
 
-      // ✅ IMPORTANT: match your backend ENUM
-      const completed = data;
+      const completed = data.filter(isPaidSession);
 
       setCompletedSessions(completed);
 
@@ -81,7 +82,7 @@ const TotalSessions = () => {
               </p>
 
               <p className="total-sessions__meta">
-                Status: {session.status}
+                Status: {session.payment?.status || session.status}
               </p>
             </article>
           ))}

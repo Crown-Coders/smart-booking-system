@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   AvailabilitySlot.init({
     therapistId: DataTypes.INTEGER,
+    bookingId: DataTypes.INTEGER,
     date: DataTypes.DATE,
     startTime: DataTypes.TIME,
     endTime: DataTypes.TIME,

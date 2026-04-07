@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { AvailabilitySlot } = require("../models");
+const { Op, fn, col, where } = require("sequelize");
 
 router.get("/", async (req, res) => {
 
@@ -14,8 +15,10 @@ router.get("/", async (req, res) => {
 
     const slots = await AvailabilitySlot.findAll({
       where: {
-        therapistId,
-        date
+        [Op.and]: [
+          { therapistId },
+          where(fn('date', col('date')), date),
+        ],
       },
       attributes: ["startTime", "endTime", "isBooked"],
       order: [["startTime", "ASC"]]

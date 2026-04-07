@@ -113,7 +113,13 @@ router.post("/login", async (req, res) => {
         role: user.role,
         isStaff: user.isStaff,
         isSuperUser: user.isSuperUser,
-        isActive: user.isActive
+        isActive: user.isActive,
+        idNumber: user.idNumber,
+        cardHolderName: user.cardHolderName,
+        cardBrand: user.cardBrand,
+        cardLast4: user.cardLast4,
+        cardExpiryMonth: user.cardExpiryMonth,
+        cardExpiryYear: user.cardExpiryYear,
       }
     });
 

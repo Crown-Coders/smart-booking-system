@@ -326,6 +326,16 @@ const bookings = [
   { id: '3', patientName: 'Mark Lane', patientEmail: 'mark@example.com', therapist: 'Dr. Smith', date: '2026-03-05', time: '09:00', status: 'cancelled', paymentStatus: 'unpaid', amount: 200, notes: '' },
 ];
 
+const serviceCategories = [
+  'Educational Psychologist',
+  'Couple Therapy',
+  'Occupational Therapist',
+  'Speech and Language Therapy',
+  'Family Therapist',
+  'Counselling',
+  'Trauma Counselling',
+];
+
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -370,7 +380,7 @@ const [newTherapist, setNewTherapist] = useState({
   name: '',
   surname: '',
   title: 'Dr.',
-  specialty: '',
+  specialty: serviceCategories[0],
   typeOfPractice: '',
   yearsOfExperience: '',
   licenseNumber: '',
@@ -667,14 +677,19 @@ return (
             }
             style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
           />
-          <input
-            placeholder="Specialty"
+          <select
             value={newTherapist.specialty}
             onChange={(e) =>
               setNewTherapist({ ...newTherapist, specialty: e.target.value })
             }
             style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
+          >
+            {serviceCategories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
           <input
             placeholder="Years of Experience"
             type="number"
@@ -749,7 +764,7 @@ return (
                     surname: '',
                     email: '',
                     password: '',
-                    specialty: '',
+                    specialty: serviceCategories[0],
                     yearsOfExperience: '',
                     licenseNumber: '',
                     typeOfPractice: '',

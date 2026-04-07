@@ -1,11 +1,13 @@
 // src/components/Calendar.jsx
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./calendar.css";
 
 function Calendar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const selectedTherapistFromState = location.state?.therapist;
+  const rescheduleAppointment = location.state?.appointment;
 
   /** -------------------- STATE -------------------- */
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -28,7 +30,23 @@ function Calendar() {
   });
 
   /** -------------------- FETCH CURRENT USER -------------------- */
-  useEffect(() => { fetchCurrentUser(); }, []);
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (rescheduleAppointment?.bookingDate) {
+      setSelectedDate(rescheduleAppointment.bookingDate);
+      setBookingData(prev => ({
+        ...prev,
+        date: rescheduleAppointment.bookingDate,
+        startTime: "",
+        endTime: "",
+        description: rescheduleAppointment.description || "",
+      }));
+    }
+  }, [rescheduleAppointment]);
+
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -178,9 +196,16 @@ function Calendar() {
         status: 'PENDING',
       };
 
-      const bookingRes = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      const endpoint = rescheduleAppointment
+        ? `${import.meta.env.VITE_API_URL}/api/bookings/${rescheduleAppointment.id}/reschedule`
+        : `${import.meta.env.VITE_API_URL}/api/bookings`;
+
+      const bookingRes = await fetch(endpoint, {
+        method: rescheduleAppointment ? "PATCH" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(bookingPayload),
       });
 
@@ -191,7 +216,15 @@ function Calendar() {
 
       const data = await bookingRes.json();
 
-      /** ---------- REDIRECT TO PAYFAST ---------- */
+      console.log("Booking successful:", data);
+
+      if (rescheduleAppointment) {
+        alert("Your session has been rescheduled successfully.");
+        navigate("/appointments");
+        return;
+      }
+
+      // Redirect to payment immediately
       const payfastRes = await fetch(
         `${import.meta.env.VITE_API_URL}/api/bookings/payfast/${data.booking.id}`,
         { method: "POST" }
@@ -267,7 +300,7 @@ function Calendar() {
     <>
       <div className="soft-calendar">
         <div className="calendar-header">
-          <h1>Calendar</h1>
+          <h1>{rescheduleAppointment ? "Reschedule Session" : "Calendar"}</h1>
           <div className="calendar-nav">
             <button className="nav-btn" onClick={goToPreviousMonth}>←</button>
             <span className="month-year">{monthNames[month]} {year}</span>
@@ -275,6 +308,12 @@ function Calendar() {
             <button className="today-btn" onClick={goToToday}>Today</button>
           </div>
         </div>
+
+        {rescheduleAppointment && (
+          <div style={{ marginBottom: "1rem", padding: "1rem", background: "#FFF8E8", borderRadius: "12px", border: "1px solid #F6D28B", color: "#8A5A00" }}>
+            Rescheduling is only allowed at least 24 hours before the session. Your existing payment stays attached to this booking.
+          </div>
+        )}
 
         <div className="calendar-grid">
           <div className="weekdays">{days.map(d => <div key={d}>{d}</div>)}</div>
@@ -389,10 +428,20 @@ function Calendar() {
             </div>
 
             {/* Buttons */}
-            <div style={{ display:'flex', gap:'1rem', marginTop:'1rem' }}>
-              <button className="btn-secondary" onClick={()=>{setShowBookingModal(false); resetBookingForm();}}>Cancel</button>
-              <button className="btn-primary" onClick={handleBooking} disabled={!bookingData.startTime || !bookingData.endTime || !bookingData.therapistId || loading}>
-                {loading ? "Processing..." : "Book & Pay Now"}
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button 
+                className="btn-secondary"
+                onClick={()=>{setShowBookingModal(false); resetBookingForm();}}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={handleBooking} 
+                disabled={!bookingData.startTime || !bookingData.endTime || !bookingData.therapistId || loading}
+                style={{ backgroundColor: '#a1ad95' }}
+              >
+                {loading ? "Processing..." : rescheduleAppointment ? "Save New Time" : "Book & Pay Now"}
               </button>
             </div>
           </div>

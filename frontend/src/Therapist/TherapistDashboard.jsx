@@ -66,6 +66,8 @@ const TherapistDashboard = () => {
 
   const [bookings, setBookings] = useState([]);
   const [therapistName, setTherapistName] = useState("");
+  const isPaidSession = (booking) =>
+    booking?.payment?.status === "COMPLETED" || booking?.status === "CONFIRMED";
 
   useEffect(() => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -115,15 +117,17 @@ const TherapistDashboard = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const upcoming = bookings.filter(
-  (b) => new Date(b.bookingDate) >= new Date(today)
+const upcoming = bookings.filter(
+  (b) => new Date(b.bookingDate) >= new Date(today) && isPaidSession(b)
 );
 
 console.log("Upcoming sessions:", upcoming); // ✅ DEBUG LINE
 
 const history = bookings.filter(
-  (b) => new Date(b.bookingDate) < new Date(today)
+  (b) => new Date(b.bookingDate) < new Date(today) && isPaidSession(b)
 );
+
+const paidSessions = bookings.filter(isPaidSession);
 
   return (
     <div style={styles.content}>
@@ -141,9 +145,9 @@ const history = bookings.filter(
         >
           <div style={styles.statLabel}>Total Sessions</div>
           <div style={styles.statValue(colors.deepTeal)}>
-            {bookings.length}
+            {paidSessions.length}
           </div>
-          <div style={styles.statSub}>Click to view all sessions</div>
+          <div style={styles.statSub}>Click to view paid sessions</div>
         </div>
 
         {/* UPCOMING SESSIONS */}
