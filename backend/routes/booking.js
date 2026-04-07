@@ -274,7 +274,7 @@ router.post("/", async (req, res) => {
       where: {
         therapistId,
         bookingDate,
-        status: { [Op.in]: ["PENDING", "CONFIRMED"] },
+        status: { [Op.in]: ["CONFIRMED"] },
         [Op.or]: [{ startTime: { [Op.lt]: endTime }, endTime: { [Op.gt]: startTime } }],
       },
       transaction: t,
@@ -323,7 +323,6 @@ router.post("/", async (req, res) => {
     );
 
     await t.commit();
-    await t.commit(); // commit transaction
 
     console.log("Booking created successfully", {
       bookingId: booking.id,
@@ -390,6 +389,7 @@ router.patch("/:id/reschedule", async (req, res) => {
     const conflictingSlot = await AvailabilitySlot.findOne({
       where: {
         therapistId: booking.therapistId,
+        isBooked: true,
         [Op.and]: [
           where(fn("date", col("date")), bookingDate),
           { startTime: { [Op.lt]: endTime } },

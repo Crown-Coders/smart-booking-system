@@ -210,8 +210,19 @@ function Calendar() {
       });
 
       if (!bookingRes.ok) {
-        const errorData = await bookingRes.json();
-        throw new Error(errorData.error || "Booking failed");
+        const rawError = await bookingRes.text();
+        let errorMessage = "Booking failed";
+
+        try {
+          const parsedError = JSON.parse(rawError);
+          errorMessage = parsedError.error || errorMessage;
+        } catch {
+          if (rawError) {
+            errorMessage = rawError;
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data = await bookingRes.json();
@@ -236,7 +247,7 @@ function Calendar() {
       /** ---------- POLL BOOKING STATUS ---------- */
       const pollBookingStatus = setInterval(async () => {
         const updatedBooking = await fetchBookingStatus(data.booking.id);
-        if (updatedBooking?.status === "COMPLETED") {
+        if (updatedBooking?.status === "CONFIRMED") {
           clearInterval(pollBookingStatus);
           alert("Booking confirmed!");
           setShowBookingModal(false);
@@ -257,7 +268,8 @@ function Calendar() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch booking status");
-      return await res.json();
+      const data = await res.json();
+      return data.booking;
     } catch (err) { console.error(err); return null; }
   };
 
