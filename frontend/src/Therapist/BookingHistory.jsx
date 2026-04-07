@@ -4,16 +4,17 @@ import "./BookingHistory.css";
 
 const BookingHistory = () => {
   const [historyBookings, setHistoryBookings] = useState([]);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
-  const fetchBookingHistory = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem("user"));
+    const fetchBookingHistory = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
 
-      if (!user?.id) {
-        console.error("No logged-in user found");
-        return;
-      }
+        if (!user?.id) {
+          setHistoryBookings([]);
+          return;
+        }
 
       // ✅ STEP 1: get therapistId
       const therapistRes = await fetch(
@@ -32,23 +33,24 @@ const BookingHistory = () => {
 
       if (!response.ok) throw new Error("Failed to fetch booking history");
 
-      const data = await response.json();
+        const data = await response.json();
 
-      const today = new Date().toISOString().split("T")[0];
+        const parseDateOnly = (value) => new Date(`${value}T00:00:00`);
+        const today = parseDateOnly(new Date().toISOString().split("T")[0]);
 
-      const history = data.filter(
-        (b) => new Date(b.bookingDate) < new Date(today)
-      );
+        const history = (Array.isArray(data) ? data : []).filter(
+          (b) => b.bookingDate && parseDateOnly(b.bookingDate) < today
+        );
 
-      setHistoryBookings(history);
+        setHistoryBookings(history);
+      } catch (error) {
+        console.error("Error fetching booking history:", error);
+        setHistoryBookings([]);
+      }
+    };
 
-    } catch (error) {
-      console.error("Error fetching booking history:", error);
-    }
-  };
-
-  fetchBookingHistory();
-}, []);
+    fetchBookingHistory();
+  }, [apiBaseUrl]);
 
   return (
     <section className="booking-history">

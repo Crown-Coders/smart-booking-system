@@ -515,6 +515,42 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
+/** -------------------- GET THERAPIST BOOKINGS -------------------- */
+router.get("/therapist/:therapistId", async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+
+    const bookings = await Booking.findAll({
+      where: { therapistId },
+      order: [["bookingDate", "ASC"], ["startTime", "ASC"]],
+    });
+
+    const bookingsWithClient = await Promise.all(
+      bookings.map(async (booking) => {
+        const client = await User.findByPk(booking.clientId, {
+          attributes: ["id", "name", "email"],
+        });
+
+        return {
+          ...booking.toJSON(),
+          client: client
+            ? {
+                id: client.id,
+                name: client.name,
+                email: client.email,
+              }
+            : null,
+        };
+      })
+    );
+
+    return res.json(bookingsWithClient);
+  } catch (error) {
+    console.error("Error fetching therapist bookings:", error);
+    return res.status(500).json({ error: "Failed to fetch therapist bookings" });
+  }
+});
+
 /** -------------------- PAYMENT SUCCESS - MARK SLOTS BOOKED -------------------- */
 router.post("/payment-success/:bookingId", async (req, res) => {
   try {
