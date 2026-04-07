@@ -67,7 +67,7 @@ export default function AdminSettings() {
         </div>
         <div style={styles.row}>
           <span>Default API host</span>
-          <strong>http://localhost:5000</strong>
+          <strong>${import.meta.env.VITE_API_URL}</strong>
         </div>
         <div style={styles.row}>
           <span>Admin access level</span>
