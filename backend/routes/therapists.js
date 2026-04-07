@@ -4,65 +4,24 @@ const router = express.Router();
 const { TherapistProfile, User, Service } = require("../models");
 const bcrypt = require('bcrypt');
 
-const SERVICE_CATALOG = {
-  "Educational Psychologist": {
-    description: "Academic, emotional, and developmental support for learners.",
-  },
-  "Couple Therapy": {
-    description: "Strengthen communication, repair trust, and rebuild connection.",
-  },
-  "Occupational Therapist": {
-    description: "Support for daily functioning, adjustment, and recovery.",
-  },
-  "Speech and Language Therapy": {
-    description: "Professional help with communication and language development.",
-  },
-  "Family Therapist": {
-    description: "Navigate conflict, transitions, and healthier family dynamics.",
-  },
-  Counselling: {
-    description: "General emotional support for stress, grief, and life challenges.",
-  },
-  "Trauma Counselling": {
-    description: "Compassionate trauma-informed care for recovery and grounding.",
-  },
-};
-
-const serializeTherapistProfile = async (profile) => {
-  const user = await User.findByPk(profile.userId, {
-    attributes: ['id', 'name', 'email', 'idNumber', 'role']
-  });
-
-  const services = await Service.findAll({
-    where: { therapistId: profile.id, isActive: true },
-    attributes: ['id', 'name', 'description', 'durationMinutes', 'price', 'isActive'],
-    order: [['createdAt', 'ASC']],
-  });
-
-  return {
-    id: profile.id,
-    specialization: profile.specialization,
-    yearsOfExperience: profile.yearsOfExperience,
-    licenseNumber: profile.licenseNumber,
-    typeOfPractice: profile.typeOfPractice,
-    qualification: profile.qualification,
-    bio: profile.bio,
-    image: profile.image,
-    workingDays: profile.workingDays || '1,2,3,4,5',
-    workDayStart: profile.workDayStart || '08:00',
-    workDayEnd: profile.workDayEnd || '17:00',
-    createdAt: profile.createdAt,
-    updatedAt: profile.updatedAt,
-    services,
-    user: user ? {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      idNumber: user.idNumber,
-      role: user.role
-    } : null
-  };
-};
+const buildTherapistResponse = (profile, user) => ({
+  id: profile?.id || null,
+  userId: user?.id || profile?.userId || null,
+  name: user?.name || '',
+  email: user?.email || '',
+  phone: user?.phone || '',
+  idNumber: user?.idNumber || '',
+  role: user?.role || '',
+  specialization: profile?.specialization || '',
+  qualification: profile?.qualification || '',
+  yearsOfExperience: profile?.yearsOfExperience || 0,
+  licenseNumber: profile?.licenseNumber || '',
+  typeOfPractice: profile?.typeOfPractice || '',
+  bio: profile?.bio || '',
+  image: profile?.image || null,
+  createdAt: profile?.createdAt || user?.createdAt || null,
+  updatedAt: profile?.updatedAt || user?.updatedAt || null,
+});
 
 // GET all therapists - using manual fetching (NO include)
 router.get('/', async (req, res) => {
@@ -75,7 +34,31 @@ router.get('/', async (req, res) => {
 
     // For each profile, fetch the corresponding user manually
     const therapists = await Promise.all(
-      therapistProfiles.map((profile) => serializeTherapistProfile(profile))
+      therapistProfiles.map(async (profile) => {
+        const user = await User.findByPk(profile.userId, {
+          attributes: ['id', 'name', 'email', 'phone', 'idNumber', 'role']
+        });
+
+        return {
+          id: profile.id,
+          specialization: profile.specialization,
+          yearsOfExperience: profile.yearsOfExperience,
+          licenseNumber: profile.licenseNumber,
+          typeOfPractice: profile.typeOfPractice,
+          bio: profile.bio,
+          image: profile.image,
+          createdAt: profile.createdAt,
+          updatedAt: profile.updatedAt,
+          user: user ? {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            idNumber: user.idNumber,
+            role: user.role
+          } : null
+        };
+      })
     );
 
     console.log('Sending therapists data');
@@ -83,6 +66,27 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Error in GET /api/therapists:', err);
     res.status(500).json({ error: 'Failed to fetch therapists' });
+  }
+});
+
+// GET therapist profile by user id
+router.get('/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'name', 'email', 'phone', 'idNumber', 'role', 'createdAt', 'updatedAt']
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const profile = await TherapistProfile.findOne({ where: { userId: user.id } });
+    return res.json(buildTherapistResponse(profile, user));
+  } catch (err) {
+    console.error('Error in GET /api/therapists/:userId:', err);
+    return res.status(500).json({ message: 'Failed to fetch therapist profile' });
   }
 });
 
@@ -99,10 +103,7 @@ router.post('/', async (req, res) => {
       licenseNumber,
       typeOfPractice,
       bio,
-      image,
-      workingDays,
-      workDayStart,
-      workDayEnd,
+      image
     } = req.body;
 
     if (!SERVICE_CATALOG[specialty]) {
@@ -140,23 +141,28 @@ router.post('/', async (req, res) => {
       yearsOfExperience,
       licenseNumber,
       typeOfPractice,
-      workingDays: workingDays || '1,2,3,4,5',
-      workDayStart: workDayStart || '08:00',
-      workDayEnd: workDayEnd || '17:00',
       bio,
       image: image || null
     });
 
-    await Service.create({
-      therapistId: therapistProfile.id,
-      name: specialty,
-      description: SERVICE_CATALOG[specialty].description,
-      durationMinutes: 60,
-      price: 800,
-      isActive: true,
-    });
-
-    const fullProfile = await serializeTherapistProfile(therapistProfile);
+    const fullProfile = {
+      id: therapistProfile.id,
+      specialization: therapistProfile.specialization,
+      yearsOfExperience: therapistProfile.yearsOfExperience,
+      licenseNumber: therapistProfile.licenseNumber,
+      typeOfPractice: therapistProfile.typeOfPractice,
+      bio: therapistProfile.bio,
+      image: therapistProfile.image,
+      createdAt: therapistProfile.createdAt,
+      updatedAt: therapistProfile.updatedAt,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        idNumber: user.idNumber,
+        role: user.role
+      }
+    };
 
     res.status(201).json({
       message: 'Therapist created successfully',
@@ -165,6 +171,73 @@ router.post('/', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create therapist' });
+  }
+});
+
+// UPDATE therapist profile by user id
+router.put('/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const {
+      name,
+      email,
+      phone,
+      idNumber,
+      specialization,
+      qualification,
+      yearsOfExperience,
+      licenseNumber,
+      typeOfPractice,
+      bio,
+      image
+    } = req.body;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser && existingUser.id !== user.id) {
+        return res.status(400).json({ message: 'Email already exists' });
+      }
+    }
+
+    user.name = typeof name === 'string' ? name : user.name;
+    user.email = typeof email === 'string' ? email : user.email;
+    user.phone = typeof phone === 'string' ? phone : user.phone;
+    user.idNumber = typeof idNumber === 'string' ? idNumber : user.idNumber;
+    await user.save();
+
+    const [profile] = await TherapistProfile.findOrCreate({
+      where: { userId: user.id },
+      defaults: {
+        userId: user.id,
+        specialization: specialization || '',
+        qualification: qualification || '',
+        yearsOfExperience: Number.isFinite(Number(yearsOfExperience)) ? Number(yearsOfExperience) : 0,
+        licenseNumber: licenseNumber || '',
+        typeOfPractice: typeOfPractice || '',
+        bio: bio || '',
+        image: image || null
+      }
+    });
+
+    if (typeof specialization === 'string') profile.specialization = specialization;
+    if (typeof qualification === 'string') profile.qualification = qualification;
+    if (yearsOfExperience !== undefined) profile.yearsOfExperience = Number(yearsOfExperience) || 0;
+    if (typeof licenseNumber === 'string') profile.licenseNumber = licenseNumber;
+    if (typeof typeOfPractice === 'string') profile.typeOfPractice = typeOfPractice;
+    if (typeof bio === 'string') profile.bio = bio;
+    if (typeof image === 'string' || image === null) profile.image = image;
+
+    await profile.save();
+
+    return res.json(buildTherapistResponse(profile, user));
+  } catch (err) {
+    console.error('Error in PUT /api/therapists/:userId:', err);
+    return res.status(500).json({ message: 'Failed to update therapist profile' });
   }
 });
 
@@ -180,93 +253,6 @@ router.delete('/:id', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// GET therapist by user ID
-router.get('/by-user/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const therapistProfile = await TherapistProfile.findOne({ where: { userId } });
-    if (!therapistProfile) return res.status(404).json({ message: 'Therapist not found' });
-    res.json({ therapistId: therapistProfile.id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// GET therapist profile by user ID
-router.get('/profile/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const therapistProfile = await TherapistProfile.findOne({ where: { userId } });
-    if (!therapistProfile) return res.status(404).json({ message: 'Therapist profile not found' });
-    res.json(await serializeTherapistProfile(therapistProfile));
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.patch('/profile/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const therapistProfile = await TherapistProfile.findOne({ where: { userId } });
-    if (!therapistProfile) return res.status(404).json({ message: 'Therapist profile not found' });
-
-    const {
-      specialization,
-      yearsOfExperience,
-      licenseNumber,
-      qualification,
-      bio,
-      typeOfPractice,
-      workingDays,
-      workDayStart,
-      workDayEnd,
-      image,
-    } = req.body;
-
-    if (specialization !== undefined) therapistProfile.specialization = specialization;
-    if (yearsOfExperience !== undefined) therapistProfile.yearsOfExperience = yearsOfExperience;
-    if (licenseNumber !== undefined) therapistProfile.licenseNumber = licenseNumber;
-    if (qualification !== undefined) therapistProfile.qualification = qualification;
-    if (bio !== undefined) therapistProfile.bio = bio;
-    if (typeOfPractice !== undefined) therapistProfile.typeOfPractice = typeOfPractice;
-    if (workingDays !== undefined) therapistProfile.workingDays = workingDays;
-    if (workDayStart !== undefined) therapistProfile.workDayStart = workDayStart;
-    if (workDayEnd !== undefined) therapistProfile.workDayEnd = workDayEnd;
-    if (image !== undefined) therapistProfile.image = image;
-
-    await therapistProfile.save();
-
-    if (specialization !== undefined && SERVICE_CATALOG[specialization]) {
-      const existingService = await Service.findOne({ where: { therapistId: therapistProfile.id } });
-
-      if (existingService) {
-        existingService.name = specialization;
-        existingService.description = SERVICE_CATALOG[specialization].description;
-        existingService.durationMinutes = existingService.durationMinutes || 60;
-        existingService.price = existingService.price || 800;
-        existingService.isActive = true;
-        await existingService.save();
-      } else {
-        await Service.create({
-          therapistId: therapistProfile.id,
-          name: specialization,
-          description: SERVICE_CATALOG[specialization].description,
-          durationMinutes: 60,
-          price: 800,
-          isActive: true,
-        });
-      }
-    }
-
-    res.json(await serializeTherapistProfile(therapistProfile));
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to update therapist profile' });
   }
 });
 

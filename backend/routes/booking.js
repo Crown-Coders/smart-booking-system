@@ -501,6 +501,31 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
+/** -------------------- PAYMENT SUCCESS - MARK SLOTS BOOKED -------------------- */
+router.post("/payment-success/:bookingId", async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.bookingId);
+
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+    booking.status = "CONFIRMED";
+
+    await booking.save();
+
+    // Mark slots as booked
+    await AvailabilitySlot.update(
+      { isBooked: true },
+      { where: { bookingId: booking.id } },
+    );
+
+    res.json({ message: "Booking confirmed and slots marked as booked" });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({ error: "Payment confirmation failed" });
+  }
+});
+
 /** -------------------- PAYFAST REDIRECT -------------------- */
 router.post("/payfast/:bookingId", async (req, res) => {
   try {
