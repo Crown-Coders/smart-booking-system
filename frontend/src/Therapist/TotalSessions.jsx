@@ -27,7 +27,7 @@ const TotalSessions = () => {
           return;
         }
 
-        const res = await fetch(`${apiBaseUrl}/api/bookings/therapist/${therapistId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/therapist/${therapistId}`);
         if (!res.ok) throw new Error("Failed to fetch sessions");
 
         const data = await res.json();

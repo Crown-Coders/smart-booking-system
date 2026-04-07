@@ -100,7 +100,6 @@ const MENU_BY_ROLE = {
   superuser: [
     { name: "Dashboard", path: "/admin" },
     { name: "Users", path: "/admin/users" },
-    { name: "Therapists", path: "/admin/therapists" },
     { name: "Reports", path: "/admin/reports" },
     { name: "System Settings", path: "/admin/settings" },
     // AI Chatbot removed – now accessible via floating button

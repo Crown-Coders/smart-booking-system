@@ -13,24 +13,18 @@ const UpcomingSessions = () => {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
 
-        if (!user?.id) {
-          setUpcomingSessions([]);
-          return;
-        }
+      // ✅ STEP 1
+      const therapistRes = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/therapists/by-user/${user.id}`
+      );
 
-        const therapistRes = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`);
-        if (!therapistRes.ok) throw new Error("Failed to fetch therapist profile");
+      const therapistData = await therapistRes.json();
+      const therapistId = therapistData.therapistId;
 
-        const therapistData = await therapistRes.json();
-        const therapistId = therapistData.id;
-
-        if (!therapistId) {
-          setUpcomingSessions([]);
-          return;
-        }
-
-        const response = await fetch(`${apiBaseUrl}/api/bookings/therapist/${therapistId}`);
-        if (!response.ok) throw new Error("Failed to fetch upcoming sessions");
+      // ✅ STEP 2
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/bookings/therapist/${therapistId}`
+      );
 
         const data = await response.json();
 

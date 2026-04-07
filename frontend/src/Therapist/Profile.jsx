@@ -61,11 +61,9 @@ const Profile = () => {
           return;
         }
 
-        const response = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch therapist profile");
-        }
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/therapists/${user.id}`
+        );
 
         const data = await response.json();
 
@@ -95,34 +93,16 @@ const Profile = () => {
       setSaving(true);
       const user = JSON.parse(localStorage.getItem("user"));
 
-      if (!user || !user.id) {
-        throw new Error("No logged-in user found");
-      }
-
-      const payload = {
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-        idNumber: profile.idNumber,
-        specialization: profile.specialization,
-        qualification: profile.qualification,
-        yearsOfExperience: Number(profile.yearsOfExperience) || 0,
-        licenseNumber: profile.licenseNumber,
-        bio: profile.bio,
-      };
-
-      const response = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to save profile");
-      }
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/therapists/${user.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(profile),
+        }
+      );
 
       const updatedData = await response.json();
 

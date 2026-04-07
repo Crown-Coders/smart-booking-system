@@ -81,7 +81,7 @@ const TherapistDashboard = () => {
   const fetchBookings = async () => {
     try {
       // Get therapist profile for the currently logged-in user.
-      const therapistRes = await fetch(`${apiBaseUrl}/api/therapists/${user.id}`);
+      const therapistRes = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists/${user.id}`);
 
       if (!therapistRes.ok) throw new Error("Failed to fetch therapist profile");
 
@@ -93,7 +93,7 @@ const TherapistDashboard = () => {
         return;
       }
 
-      const bookingsRes = await fetch(`${apiBaseUrl}/api/bookings/therapist/${therapistId}`);
+      const bookingsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/therapist/${therapistId}`);
 
       if (!bookingsRes.ok) throw new Error("Failed to fetch bookings");
 

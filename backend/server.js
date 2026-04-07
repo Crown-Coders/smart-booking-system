@@ -86,9 +86,10 @@ const ensureSuperUser = async () => {
 // Sync DB, ensure superuser, and start server
 const startServer = async () => {
   try {
-    await db.sequelize.sync();
-    console.log('Database synced');
- 
+    await db.sequelize.sync({alter: true});
+    await ensureLocalSqliteColumns();
+    console.log("Database synced");
+
     await ensureSuperUser(); // <-- create superuser if missing
  
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
