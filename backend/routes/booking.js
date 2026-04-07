@@ -323,6 +323,19 @@ router.post("/", async (req, res) => {
     );
 
     await t.commit();
+    await t.commit(); // commit transaction
+
+    console.log("Booking created successfully", {
+      bookingId: booking.id,
+      clientId: userId,
+      therapistId,
+      bookingDate,
+      startTime,
+      endTime,
+      slotCount: slotsToCreate.length,
+      amount: price,
+    });
+
     res.status(201).json({ booking, amount: price });
   } catch (error) {
     await t.rollback();

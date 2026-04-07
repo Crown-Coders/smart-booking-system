@@ -1,788 +1,732 @@
-import { useState, useEffect} from 'react';
+import React, { useEffect, useMemo, useState } from "react";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const getFallbackImage = (id) => `https://i.pravatar.cc/150?u=therapist-${id}`;
 
 const colors = {
-  deepTeal: '#002324',
-  sand: '#E5DDDE',
-  sage: '#A1AD95',
-  mint: '#EBFACF',
-  white: '#FFFFFF',
+  deepTeal: "#002324",
+  sand: "#E5DDDE",
+  sage: "#A1AD95",
+  mint: "#EBFACF",
+  white: "#FFFFFF",
+  slate: "#64748B",
 };
 
+const emptyTherapistForm = {
+  name: "",
+  surname: "",
+  email: "",
+  password: "",
+  specialty: "",
+  yearsOfExperience: "",
+  licenseNumber: "",
+  typeOfPractice: "",
+  bio: "",
+  image: "",
+};
+
+const SERVICE_OPTIONS = [
+  "Educational Psychologist",
+  "Couple Therapy",
+  "Occupational Therapist",
+  "Speech and Language Therapy",
+  "Family Therapist",
+  "Counselling",
+  "Trauma Counselling",
+];
+
 const styles = {
-  app: {
-    minHeight: '100vh',
-    backgroundColor: '#f5f3f0',
-    fontFamily: 'system-ui, Avenir, Helvetica, Arial, sans-serif',
+  page: {
+    minHeight: "100vh",
+    backgroundColor: "#f5f3f0",
+    color: colors.deepTeal,
+    fontFamily: '"DM Sans", system-ui, sans-serif',
+  },
+  shell: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "2rem 1.25rem 3rem",
+  },
+  hero: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "1rem",
+    alignItems: "end",
+    marginBottom: "1.5rem",
+    flexWrap: "wrap",
+  },
+  title: {
+    margin: 0,
+    fontSize: "2rem",
+    fontWeight: 700,
     color: colors.deepTeal,
   },
-
-  userBlock: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
+  subtitle: {
+    margin: "0.45rem 0 0",
+    color: colors.slate,
+    fontSize: "0.95rem",
   },
-  avatar: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '50%',
-    backgroundColor: colors.sage,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '0.85rem',
-    fontWeight: '700',
-    color: colors.deepTeal,
-    flexShrink: 0,
-  },
-  userName: {
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    color: colors.mint,
-  },
-  userRole: {
-    fontSize: '0.7rem',
-    color: colors.sage,
-    letterSpacing: '0.08em',
-  },
-  logoutBtn: {
-    marginTop: '0.75rem',
-    width: '100%',
-    padding: '0.6rem',
-    backgroundColor: 'rgba(235,250,207,0.08)',
-    color: colors.sage,
-    border: `1px solid rgba(161,173,149,0.3)`,
-    borderRadius: '8px',
-    fontSize: '0.8rem',
-    cursor: 'pointer',
-    letterSpacing: '0.05em',
-    transition: 'all 0.2s',
-  },
-main: {
-  padding: '0',
-  minHeight: '100vh',
-},
-
-  topbar: {
-    backgroundColor: colors.white,
-    borderBottom: `1px solid ${colors.sand}`,
-    padding: '1.25rem 2.5rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'sticky',
-    top: 0,
-    zIndex: 50,
-  },
-  pageTitle: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    color: colors.deepTeal,
-    letterSpacing: '-0.02em',
-  },
-  pageDate: {
-    fontSize: '0.8rem',
-    color: colors.sage,
-    letterSpacing: '0.05em',
-    marginTop: '2px',
-  },
-  searchBar: {
-    padding: '0.6rem 1.2rem',
-    borderRadius: '20px',
+  reloadBtn: {
     border: `1px solid ${colors.sand}`,
-    backgroundColor: '#f9f8f6',
-    fontSize: '0.85rem',
-    outline: 'none',
-    width: '220px',
+    backgroundColor: colors.white,
     color: colors.deepTeal,
-    fontFamily: 'inherit',
-  },
-  content: {
-    padding: '2rem 2.5rem',
+    borderRadius: "999px",
+    padding: "0.75rem 1rem",
+    fontSize: "0.9rem",
+    fontWeight: 600,
+    cursor: "pointer",
   },
   statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '1.25rem',
-    marginBottom: '2rem',
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: "1rem",
+    marginBottom: "1.5rem",
   },
-  statCard: (accent) => ({
+  statCard: {
     backgroundColor: colors.white,
-    borderRadius: '12px',
-    padding: '1.5rem',
     border: `1px solid ${colors.sand}`,
-    borderTop: `4px solid ${accent}`,
-    boxShadow: '0 2px 8px rgba(0,35,36,0.05)',
-    position: 'relative',
-    overflow: 'hidden',
-  }),
-  statLabel: {
-    fontSize: '0.7rem',
-    letterSpacing: '0.12em',
-    textTransform: 'uppercase',
-    color: colors.sage,
-    marginBottom: '0.5rem',
-    fontFamily: '"DM Sans", sans-serif',
+    borderRadius: "18px",
+    padding: "1.25rem",
+    boxShadow: "0 8px 30px rgba(0,35,36,0.06)",
   },
-  statValue: (color) => ({
-    fontSize: '2.4rem',
-    fontWeight: '700',
-    color: color || colors.deepTeal,
-    lineHeight: 1,
-    letterSpacing: '-0.02em',
-  }),
-  statSub: {
-    fontSize: '0.75rem',
+  statLabel: {
     color: colors.sage,
-    marginTop: '0.25rem',
-    fontFamily: '"DM Sans", sans-serif',
+    fontSize: "0.78rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+  },
+  statValue: {
+    marginTop: "0.5rem",
+    fontSize: "2rem",
+    fontWeight: 700,
+    color: colors.deepTeal,
   },
   card: {
     backgroundColor: colors.white,
-    borderRadius: '12px',
     border: `1px solid ${colors.sand}`,
-    boxShadow: '0 2px 8px rgba(0,35,36,0.05)',
-    marginBottom: '2rem',
-    overflow: 'hidden',
+    borderRadius: "18px",
+    boxShadow: "0 8px 30px rgba(0,35,36,0.06)",
+    marginBottom: "1.25rem",
+    overflow: "hidden",
   },
   cardHeader: {
-    padding: '1.5rem 2rem',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "1rem",
+    padding: "1.2rem 1.25rem",
     borderBottom: `1px solid ${colors.sand}`,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#faf9f7',
+    flexWrap: "wrap",
   },
   cardTitle: {
-    fontSize: '1.1rem',
-    fontWeight: '700',
-    color: colors.deepTeal,
-    letterSpacing: '-0.01em',
+    margin: 0,
+    fontSize: "1.1rem",
+    fontWeight: 700,
   },
-  tabsRow: {
-    display: 'flex',
-    gap: '4px',
-    padding: '1.25rem 2rem 0',
-    borderBottom: `1px solid ${colors.sand}`,
-    backgroundColor: colors.white,
-  },
-  tab: (active) => ({
-    padding: '0.5rem 1.25rem',
-    fontSize: '0.82rem',
-    fontWeight: active ? '600' : '400',
-    color: active ? colors.deepTeal : colors.sage,
-    backgroundColor: active ? colors.mint : 'transparent',
-    border: 'none',
-    borderRadius: '6px 6px 0 0',
-    cursor: 'pointer',
-    letterSpacing: '0.03em',
-    transition: 'all 0.15s',
-    fontFamily: '"DM Sans", sans-serif',
-    borderBottom: active ? `2px solid ${colors.deepTeal}` : '2px solid transparent',
-  }),
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '0.85rem',
-    fontFamily: '"DM Sans", sans-serif',
-  },
-  th: {
-    padding: '0.75rem 1rem',
-    textAlign: 'left',
-    fontSize: '0.68rem',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-    color: colors.sage,
-    backgroundColor: '#faf9f7',
-    borderBottom: `1px solid ${colors.sand}`,
-    fontWeight: '600',
-  },
-  td: {
-    padding: '1rem',
-    borderBottom: `1px solid #f0eeec`,
-    color: colors.deepTeal,
-    verticalAlign: 'middle',
-  },
-  badge: (type) => {
-    const map = {
-      pending: { bg: '#FFF8E1', color: '#B7791F', border: '#F6E05E' },
-      confirmed: { bg: '#F0FFF4', color: '#276749', border: '#9AE6B4' },
-      cancelled: { bg: '#FFF5F5', color: '#C53030', border: '#FEB2B2' },
-      paid: { bg: colors.mint, color: colors.deepTeal, border: colors.sage },
-      unpaid: { bg: '#FFF5F5', color: '#C53030', border: '#FEB2B2' },
-    };
-    const s = map[type] || map.pending;
-    return {
-      display: 'inline-block',
-      padding: '3px 10px',
-      borderRadius: '20px',
-      fontSize: '0.72rem',
-      fontWeight: '600',
-      letterSpacing: '0.05em',
-      backgroundColor: s.bg,
-      color: s.color,
-      border: `1px solid ${s.border}`,
-      textTransform: 'capitalize',
-    };
-  },
-  actionBtn: (variant) => ({
-    padding: '5px 10px',
-    borderRadius: '6px',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-    transition: 'all 0.15s',
-    fontFamily: '"DM Sans", sans-serif',
-    ...(variant === 'approve'
-      ? { backgroundColor: colors.mint, color: colors.deepTeal }
-      : variant === 'reject'
-      ? { backgroundColor: '#FFF5F5', color: '#C53030', border: '1px solid #FEB2B2' }
-      : { backgroundColor: colors.sand, color: colors.deepTeal }),
-  }),
-  primaryBtn: {
-    padding: '0.6rem 1.4rem',
+  addBtn: {
+    border: "none",
     backgroundColor: colors.deepTeal,
     color: colors.mint,
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    letterSpacing: '0.03em',
-    transition: 'all 0.2s',
-    fontFamily: '"DM Sans", sans-serif',
+    borderRadius: "999px",
+    padding: "0.75rem 1rem",
+    fontSize: "0.9rem",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  bookingsList: {
+    padding: "0 1.25rem 1.25rem",
+  },
+  bookingRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "1rem",
+    alignItems: "center",
+    padding: "1rem 0",
+    borderBottom: `1px solid ${colors.sand}`,
+    flexWrap: "wrap",
+  },
+  bookingName: {
+    fontSize: "1rem",
+    fontWeight: 700,
+  },
+  bookingMeta: {
+    marginTop: "0.35rem",
+    color: colors.slate,
+    fontSize: "0.9rem",
+  },
+  bookingRight: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: "0.45rem",
+    minWidth: "180px",
+  },
+  bookingSummary: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: "0.6rem",
+    flexWrap: "wrap",
+  },
+  price: {
+    fontWeight: 700,
+  },
+  status: (status) => {
+    const normalized = String(status || "").toLowerCase();
+    const map = {
+      pending: { bg: "#FFF8E1", color: "#B7791F", border: "#F6E05E" },
+      pending_payment: { bg: "#FFF8E1", color: "#B7791F", border: "#F6E05E" },
+      confirmed: { bg: "#F0FFF4", color: "#276749", border: "#9AE6B4" },
+      completed: { bg: "#F0FFF4", color: "#276749", border: "#9AE6B4" },
+      cancelled: { bg: "#FFF5F5", color: "#C53030", border: "#FEB2B2" },
+    };
+    const palette = map[normalized] || map.pending;
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "0.3rem 0.75rem",
+      borderRadius: "999px",
+      border: `1px solid ${palette.border}`,
+      backgroundColor: palette.bg,
+      color: palette.color,
+      fontSize: "0.78rem",
+      fontWeight: 600,
+      textTransform: "uppercase",
+      letterSpacing: "0.04em",
+    };
+  },
+  approveBtn: {
+    border: "none",
+    backgroundColor: colors.mint,
+    color: colors.deepTeal,
+    borderRadius: "10px",
+    padding: "0.55rem 0.85rem",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    cursor: "pointer",
   },
   therapistsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '1.25rem',
-    padding: '1.5rem 2rem',
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+    gap: "1rem",
+    padding: "1.25rem",
   },
   therapistCard: {
-    borderRadius: '10px',
     border: `1px solid ${colors.sand}`,
-    overflow: 'hidden',
+    borderRadius: "16px",
+    overflow: "hidden",
     backgroundColor: colors.white,
-    transition: 'box-shadow 0.2s',
   },
-  therapistCardTop: {
+  therapistHead: {
     backgroundColor: colors.deepTeal,
-    padding: '1.5rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
+    color: colors.mint,
+    display: "flex",
+    alignItems: "center",
+    gap: "0.9rem",
+    padding: "1rem",
   },
   therapistImg: {
-    width: '52px',
-    height: '52px',
-    borderRadius: '50%',
+    width: "56px",
+    height: "56px",
+    borderRadius: "50%",
+    objectFit: "cover",
     border: `2px solid ${colors.mint}`,
-    objectFit: 'cover',
   },
   therapistName: {
-    fontSize: '1rem',
-    fontWeight: '700',
-    color: colors.mint,
+    margin: 0,
+    fontSize: "1rem",
+    fontWeight: 700,
   },
   therapistSpec: {
-    fontSize: '0.75rem',
+    marginTop: "0.25rem",
     color: colors.sage,
-    marginTop: '2px',
+    fontSize: "0.84rem",
   },
   therapistBody: {
-    padding: '1rem 1.25rem',
+    padding: "1rem",
+    color: colors.slate,
+    fontSize: "0.9rem",
+    lineHeight: 1.7,
   },
-  therapistMeta: {
-    fontSize: '0.78rem',
-    color: colors.sage,
-    fontFamily: '"DM Sans", sans-serif',
-    marginBottom: '0.75rem',
-    lineHeight: 1.6,
+  empty: {
+    padding: "1.25rem",
+    color: colors.slate,
   },
-  therapistActions: {
-    display: 'flex',
-    gap: '8px',
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "1rem",
+    zIndex: 1000,
   },
-  sectionHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0',
-    padding: '1.5rem 2rem',
-    borderBottom: `1px solid ${colors.sand}`,
-    backgroundColor: '#faf9f7',
+  modalCard: {
+    width: "100%",
+    maxWidth: "540px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    backgroundColor: colors.white,
+    borderRadius: "18px",
+    padding: "1.25rem",
+  },
+  modalTitle: {
+    margin: "0 0 1rem",
+    fontSize: "1.3rem",
+    fontWeight: 700,
+    color: colors.deepTeal,
+  },
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "0.85rem",
+  },
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.4rem",
+  },
+  label: {
+    fontSize: "0.84rem",
+    fontWeight: 600,
+    color: colors.deepTeal,
+  },
+  input: {
+    width: "100%",
+    padding: "0.8rem 0.9rem",
+    borderRadius: "12px",
+    border: `1px solid ${colors.sand}`,
+    backgroundColor: "#fcfbfa",
+    fontSize: "0.92rem",
+    outline: "none",
+    boxSizing: "border-box",
+  },
+  textarea: {
+    width: "100%",
+    minHeight: "96px",
+    padding: "0.8rem 0.9rem",
+    borderRadius: "12px",
+    border: `1px solid ${colors.sand}`,
+    backgroundColor: "#fcfbfa",
+    fontSize: "0.92rem",
+    outline: "none",
+    boxSizing: "border-box",
+    resize: "vertical",
+  },
+  modalActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "0.75rem",
+    marginTop: "1rem",
+  },
+  secondaryBtn: {
+    border: `1px solid ${colors.sand}`,
+    backgroundColor: colors.white,
+    color: colors.deepTeal,
+    borderRadius: "12px",
+    padding: "0.75rem 1rem",
+    fontWeight: 600,
+    cursor: "pointer",
   },
 };
 
-
-
-const stats = { total: 10, pending: 3, confirmed: 5, cancelled: 2, totalSlots: 8, availableSlots: 3 };
-const bookings = [
-  { id: '1', patientName: 'John Doe', patientEmail: 'john@example.com', therapist: 'Dr. Smith', date: '2026-03-03', time: '10:00', status: 'pending', paymentStatus: 'paid', amount: 200, notes: '' },
-  { id: '2', patientName: 'Jane Roe', patientEmail: 'jane@example.com', therapist: 'Dr. Brown', date: '2026-03-04', time: '12:00', status: 'confirmed', paymentStatus: 'unpaid', amount: 150, notes: 'Follow-up' },
-  { id: '3', patientName: 'Mark Lane', patientEmail: 'mark@example.com', therapist: 'Dr. Smith', date: '2026-03-05', time: '09:00', status: 'cancelled', paymentStatus: 'unpaid', amount: 200, notes: '' },
-];
-
-const serviceCategories = [
-  'Educational Psychologist',
-  'Couple Therapy',
-  'Occupational Therapist',
-  'Speech and Language Therapy',
-  'Family Therapist',
-  'Counselling',
-  'Trauma Counselling',
-];
-
-
-const formatDate = (d) => new Date(d).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
-
-export default function AdminDashboard() {
-  const [filter, setFilter] = useState('all');
-  // Modal open/close state
-const [showModal, setShowModal] = useState(false);
-const handleFileChange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const img = new Image();
-  const objectUrl = URL.createObjectURL(file);
-  img.src = objectUrl;
-
-  img.onload = () => {
-    const maxWidth = 150; // small width for production
-    const scale = maxWidth / img.width;
-    const canvas = document.createElement("canvas");
-    canvas.width = maxWidth;
-    canvas.height = img.height * scale;
-
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    // compress to JPEG at 0.6 quality
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
-
-    setNewTherapist(prev => ({
-      ...prev,
-      image: dataUrl
-    }));
-
-    URL.revokeObjectURL(objectUrl);
-  };
-};
-
-
-
-// New therapist form state
-const [newTherapist, setNewTherapist] = useState({
-  name: '',
-  surname: '',
-  title: 'Dr.',
-  specialty: serviceCategories[0],
-  typeOfPractice: '',
-  yearsOfExperience: '',
-  licenseNumber: '',
-  bio: '',
-  image: '',
-  email: '',
-  password: '',
+const formatTherapist = (item) => ({
+  id: String(item.id),
+  name: item.user?.name?.split(" ")[0] || "",
+  surname: item.user?.name?.split(" ").slice(1).join(" ") || "",
+  specialty: item.specialization || "General Therapy",
+  typeOfPractice: item.typeOfPractice || "Private Practice",
+  yearsOfExperience: item.yearsOfExperience || 0,
+  hpcsaNumber: item.licenseNumber || "Not provided",
+  image: item.image || getFallbackImage(item.id),
 });
 
-// Dynamic therapists list
-const [therapistsList, setTherapistsList] = useState([]);
+const formatDateTime = (booking) => {
+  const dateLabel = booking.bookingDate
+    ? new Date(booking.bookingDate).toLocaleDateString("en-ZA", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "No date";
 
-  const filtered = filter === 'all' ? bookings : bookings.filter(b => b.status === filter);
+  return `${dateLabel} · ${String(booking.startTime || "").slice(0, 5)} - ${String(
+    booking.endTime || "",
+  ).slice(0, 5)}`;
+};
 
+const getBookingTherapistName = (booking, therapists) => {
+  const therapist = therapists.find((item) => String(item.id) === String(booking.therapistId));
+  if (!therapist) return "Not assigned";
+  return `Dr. ${[therapist.name, therapist.surname].filter(Boolean).join(" ").trim()}`;
+};
 
-useEffect(() => {
-  const fetchTherapists = async () => {
+export default function AdminDashboard() {
+  const [therapists, setTherapists] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
+  const [submittingTherapist, setSubmittingTherapist] = useState(false);
+  const [updatingBookingId, setUpdatingBookingId] = useState(null);
+  const [newTherapist, setNewTherapist] = useState(emptyTherapistForm);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/therapists");
-      if (!res.ok) throw new Error('Failed to fetch therapists');
-      const data = await res.json();
+      setLoadingDashboard(true);
+      const [therapistsResult, bookingsResult, usersResult] = await Promise.allSettled([
+        fetch(`${API_BASE_URL}/api/therapists`),
+        fetch(`${API_BASE_URL}/api/bookings`),
+        fetch(`${API_BASE_URL}/api/users`),
+      ]);
 
-      // map backend fields to match your frontend display if needed
-      const formatted = data.map(t => ({
-        id: t.id,
-        name: t.user?.name?.split(' ')[0] || '',  // if you stored full name in User
-        surname: t.user?.name?.split(' ')[1] || '',
-        title: 'Dr.',
-        specialty: t.specialization,
-        typeOfPractice: t.typeOfPractice,
-        yearsOfExperience: t.yearsOfExperience,
-        hpcsaNumber: t.licenseNumber,
-        image: t.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random()*70)}` // placeholder if empty
-      }));
+      let hadFailure = false;
 
-      setTherapistsList(formatted);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to load therapists from server');
+      if (therapistsResult.status === "fulfilled" && therapistsResult.value.ok) {
+        const therapistsData = await therapistsResult.value.json();
+        setTherapists((Array.isArray(therapistsData) ? therapistsData : []).map(formatTherapist));
+      } else {
+        hadFailure = true;
+        setTherapists([]);
+      }
+
+      if (bookingsResult.status === "fulfilled" && bookingsResult.value.ok) {
+        const bookingsData = await bookingsResult.value.json();
+        setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+      } else {
+        hadFailure = true;
+        setBookings([]);
+      }
+
+      if (usersResult.status === "fulfilled" && usersResult.value.ok) {
+        const usersData = await usersResult.value.json();
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      } else {
+        hadFailure = true;
+        setUsers([]);
+      }
+
+      if (hadFailure) {
+        alert("Some dashboard data could not be loaded. Please make sure the backend server is running on port 5000.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Failed to load dashboard data");
+    } finally {
+      setLoadingDashboard(false);
     }
   };
 
-  fetchTherapists();
-}, []);
+  const stats = useMemo(() => {
+    const pending = bookings.filter((item) =>
+      ["PENDING", "pending_payment", "pending"].includes(item.status),
+    ).length;
+    const confirmed = bookings.filter((item) =>
+      ["CONFIRMED", "confirmed", "completed", "COMPLETED"].includes(item.status),
+    ).length;
 
+    return {
+      users: users.length,
+      total: bookings.length,
+      pending,
+      confirmed,
+      revenue: bookings.reduce((sum, item) => sum + Number(item.price || 0), 0),
+    };
+  }, [bookings, users]);
 
+  const handleTherapistChange = (field, value) => {
+    setNewTherapist((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
-return (
-  <>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <div style={styles.app}>
-      {/* Sidebar */}
+  const addTherapist = async () => {
+    if (!newTherapist.name || !newTherapist.surname || !newTherapist.email || !newTherapist.password) {
+      alert("Please fill in the required fields");
+      return;
+    }
 
-      {/* Main */}
-      <main style={styles.main}>
-        <div style={styles.content}>
-          {/* Stats */}
+    try {
+      setSubmittingTherapist(true);
+      const response = await fetch(`${API_BASE_URL}/api/therapists`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTherapist),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add therapist");
+      }
+
+      setShowModal(false);
+      setNewTherapist(emptyTherapistForm);
+      await fetchDashboardData();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to add therapist");
+    } finally {
+      setSubmittingTherapist(false);
+    }
+  };
+
+  const updateBookingStatus = async (bookingId, status) => {
+    try {
+      setUpdatingBookingId(bookingId);
+      const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+
+      if (!response.ok) {
+        throw new Error(data?.error || data?.message || "Update failed");
+      }
+
+      await fetchDashboardData();
+    } catch (error) {
+      console.error(error);
+      alert(error.message || `Failed to update booking to ${status}`);
+    } finally {
+      setUpdatingBookingId(null);
+    }
+  };
+
+  return (
+    <>
+      <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+      <div style={styles.page}>
+        <div style={styles.shell}>
+          <div style={styles.hero}>
+            <div>
+              <h1 style={styles.title}>Admin Dashboard</h1>
+              <p style={styles.subtitle}>Monitor live booking, therapist, and revenue activity.</p>
+            </div>
+            <button style={styles.reloadBtn} onClick={fetchDashboardData} disabled={loadingDashboard}>
+              {loadingDashboard ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+
           <div style={styles.statsGrid}>
-            <div style={styles.statCard(colors.deepTeal)}>
+            <div style={styles.statCard}>
+              <div style={styles.statLabel}>Users</div>
+              <div style={styles.statValue}>{stats.users}</div>
+            </div>
+            <div style={styles.statCard}>
               <div style={styles.statLabel}>Total Bookings</div>
-              <div style={styles.statValue(colors.deepTeal)}>{stats.total}</div>
-              <div style={styles.statSub}>All time records</div>
+              <div style={styles.statValue}>{stats.total}</div>
             </div>
-            <div style={styles.statCard('#B7791F')}>
+            <div style={styles.statCard}>
               <div style={styles.statLabel}>Pending</div>
-              <div style={styles.statValue('#B7791F')}>{stats.pending}</div>
-              <div style={styles.statSub}>Awaiting confirmation</div>
+              <div style={styles.statValue}>{stats.pending}</div>
             </div>
-            <div style={styles.statCard('#276749')}>
+            <div style={styles.statCard}>
               <div style={styles.statLabel}>Confirmed</div>
-              <div style={styles.statValue('#276749')}>{stats.confirmed}</div>
-              <div style={styles.statSub}>Ready to proceed</div>
+              <div style={styles.statValue}>{stats.confirmed}</div>
             </div>
-            <div style={styles.statCard(colors.sage)}>
-              <div style={styles.statLabel}>Available Slots</div>
-              <div style={styles.statValue(colors.deepTeal)}>
-                {stats.availableSlots}
-                <span style={{ fontSize: '1rem', color: colors.sage }}>
-                  /{stats.totalSlots}
-                </span>
-              </div>
-              <div style={styles.statSub}>Open appointments</div>
+            <div style={styles.statCard}>
+              <div style={styles.statLabel}>Revenue</div>
+              <div style={styles.statValue}>R{stats.revenue.toFixed(2)}</div>
             </div>
           </div>
 
-          {/* Bookings Table */}
           <div style={styles.card}>
-            <div style={styles.tabsRow}>
-              {['all', 'pending', 'confirmed', 'cancelled'].map((tab) => (
-                <button
-                  key={tab}
-                  style={styles.tab(filter === tab)}
-                  onClick={() => setFilter(tab)}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Recent Bookings</h2>
             </div>
-
-            <div style={{ overflowX: 'auto', padding: '0 0 0.5rem' }}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    {[
-                      'Patient',
-                      'Therapist',
-                      'Date',
-                      'Time',
-                      'Status',
-                      'Payment',
-                      'Amount',
-                      'Notes',
-                      'Actions',
-                    ].map((h) => (
-                      <th key={h} style={styles.th}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((b) => (
-                    <tr
-                      key={b.id}
-                      style={{ transition: 'background 0.15s' }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = '#faf9f7')
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = 'transparent')
-                      }
-                    >
-                      <td style={styles.td}>
-                        <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>
-                          {b.patientName}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: colors.sage }}>
-                          {b.patientEmail}
-                        </div>
-                      </td>
-                      <td style={styles.td}>{b.therapist}</td>
-                      <td style={styles.td}>{formatDate(b.date)}</td>
-                      <td style={styles.td}>{b.time}</td>
-                      <td style={styles.td}>
-                        <span style={styles.badge(b.status)}>{b.status}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.badge(b.paymentStatus)}>
-                          {b.paymentStatus}
-                        </span>
-                      </td>
-                      <td style={styles.td}>R{b.amount}</td>
-                      <td style={styles.td}>
-                        <span
-                          style={{
-                            color: colors.sage,
-                            fontStyle: b.notes ? 'normal' : 'italic',
-                          }}
+            <div style={styles.bookingsList}>
+              {bookings.length === 0 ? (
+                <div style={styles.empty}>No live booking data yet.</div>
+              ) : (
+                bookings.slice(0, 6).map((booking) => (
+                  <div key={booking.id} style={styles.bookingRow}>
+                    <div style={{ flex: 1 }}>
+                      <div style={styles.bookingName}>{booking.client?.name || "Client"}</div>
+                      <div style={styles.bookingMeta}>{formatDateTime(booking)}</div>
+                      <div style={styles.bookingMeta}>
+                        Therapist: {getBookingTherapistName(booking, therapists)}
+                      </div>
+                    </div>
+                    <div style={styles.bookingRight}>
+                      <div style={styles.bookingSummary}>
+                        <div style={styles.price}>R{Number(booking.price || 0).toFixed(2)}</div>
+                        <span style={styles.status(booking.status)}>{booking.status}</span>
+                      </div>
+                      {booking.status !== "CONFIRMED" && booking.status !== "COMPLETED" ? (
+                        <button
+                          style={styles.approveBtn}
+                          onClick={() => updateBookingStatus(booking.id, "CONFIRMED")}
+                          disabled={updatingBookingId === booking.id}
                         >
-                          {b.notes || 'None'}
-                        </span>
-                      </td>
-                      <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button style={styles.actionBtn('approve')}>✓</button>
-                          <button style={styles.actionBtn('reject')}>✕</button>
-                          <button style={styles.actionBtn('edit')}>✎</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          {updatingBookingId === booking.id ? "Updating..." : "Approve"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          {/* Therapists */}
           <div style={styles.card}>
-            <div style={styles.sectionHeader}>
-              <div style={styles.cardTitle}>Therapist Roster</div>
-              <button
-                style={styles.primaryBtn}
-                onClick={() => setShowModal(true)}
-              >
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Therapist Roster</h2>
+              <button style={styles.addBtn} onClick={() => setShowModal(true)}>
                 + Add Therapist
               </button>
             </div>
-
-            <div style={styles.therapistsGrid}>
-              {therapistsList.map((t) => (
-                <div key={t.id} style={styles.therapistCard}>
-                  <div style={styles.therapistCardTop}>
-                    <img src={t.image} alt={t.name} style={styles.therapistImg} />
-                    <div>
-                      <div style={styles.therapistName}>
-                        {t.title} {t.name} {t.surname}
+            {therapists.length === 0 ? (
+              <div style={styles.empty}>No therapists found yet.</div>
+            ) : (
+              <div style={styles.therapistsGrid}>
+                {therapists.map((therapist) => (
+                  <div key={therapist.id} style={styles.therapistCard}>
+                    <div style={styles.therapistHead}>
+                      <img
+                        src={therapist.image}
+                        alt={`${therapist.name} ${therapist.surname}`}
+                        style={styles.therapistImg}
+                      />
+                      <div>
+                        <p style={styles.therapistName}>
+                          Dr. {therapist.name} {therapist.surname}
+                        </p>
+                        <div style={styles.therapistSpec}>{therapist.specialty}</div>
                       </div>
-                      <div style={styles.therapistSpec}>{t.specialty}</div>
+                    </div>
+                    <div style={styles.therapistBody}>
+                      <div>{therapist.typeOfPractice}</div>
+                      <div>{therapist.yearsOfExperience} years experience</div>
+                      <div>HPCSA: {therapist.hpcsaNumber}</div>
                     </div>
                   </div>
-                  <div style={styles.therapistBody}>
-                    <div style={styles.therapistMeta}>
-                      <span style={{ display: 'inline-block', marginRight: '8px' }}>
-                        🏥 {t.typeOfPractice}
-                      </span>
-                      <br />
-                      <span style={{ display: 'inline-block', marginRight: '8px' }}>
-                        ⏱ {t.yearsOfExperience} yrs experience
-                      </span>
-                      <br />
-                      <span>🪪 HPCSA: {t.hpcsaNumber}</span>
-                    </div>
-                    <div style={styles.therapistActions}>
-                      <button
-                        style={{ ...styles.actionBtn('edit'), flex: 1, justifyContent: 'center' }}
-                      >
-                        ✎ Edit
-                      </button>
-                      <button
-                        style={{ ...styles.actionBtn('reject'), flex: 1, justifyContent: 'center' }}
-                      >
-                        🗑 Remove
-                      </button>
-                    </div>
-                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        
+        </div>
+
+        {showModal ? (
+          <div style={styles.modalOverlay} onClick={() => setShowModal(false)}>
+            <div style={styles.modalCard} onClick={(event) => event.stopPropagation()}>
+              <h2 style={styles.modalTitle}>Add Therapist</h2>
+              <div style={styles.formGrid}>
+                <div style={styles.field}>
+                  <label style={styles.label}>First Name</label>
+                  <input
+                    style={styles.input}
+                    value={newTherapist.name}
+                    onChange={(e) => handleTherapistChange("name", e.target.value)}
+                  />
                 </div>
-              ))}
+                <div style={styles.field}>
+                  <label style={styles.label}>Surname</label>
+                  <input
+                    style={styles.input}
+                    value={newTherapist.surname}
+                    onChange={(e) => handleTherapistChange("surname", e.target.value)}
+                  />
+                </div>
+                <div style={styles.field}>
+                  <label style={styles.label}>Email</label>
+                  <input
+                    style={styles.input}
+                    value={newTherapist.email}
+                    onChange={(e) => handleTherapistChange("email", e.target.value)}
+                  />
+                </div>
+                <div style={styles.field}>
+                  <label style={styles.label}>Password</label>
+                  <input
+                    type="password"
+                    style={styles.input}
+                    value={newTherapist.password}
+                    onChange={(e) => handleTherapistChange("password", e.target.value)}
+                  />
+                </div>
+                <div style={styles.field}>
+                  <label style={styles.label}>Specialty</label>
+                  <select
+                    style={styles.input}
+                    value={newTherapist.specialty}
+                    onChange={(e) => handleTherapistChange("specialty", e.target.value)}
+                  >
+                    <option value="">Select a service</option>
+                    {SERVICE_OPTIONS.map((service) => (
+                      <option key={service} value={service}>
+                        {service}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={styles.field}>
+                  <label style={styles.label}>Years of Experience</label>
+                  <input
+                    style={styles.input}
+                    value={newTherapist.yearsOfExperience}
+                    onChange={(e) => handleTherapistChange("yearsOfExperience", e.target.value)}
+                  />
+                </div>
+                <div style={styles.field}>
+                  <label style={styles.label}>License Number</label>
+                  <input
+                    style={styles.input}
+                    value={newTherapist.licenseNumber}
+                    onChange={(e) => handleTherapistChange("licenseNumber", e.target.value)}
+                  />
+                </div>
+                <div style={styles.field}>
+                  <label style={styles.label}>Type of Practice</label>
+                  <input
+                    style={styles.input}
+                    value={newTherapist.typeOfPractice}
+                    onChange={(e) => handleTherapistChange("typeOfPractice", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div style={{ ...styles.field, marginTop: "0.85rem" }}>
+                <label style={styles.label}>Bio</label>
+                <textarea
+                  style={styles.textarea}
+                  value={newTherapist.bio}
+                  onChange={(e) => handleTherapistChange("bio", e.target.value)}
+                />
+              </div>
+              <div style={{ ...styles.field, marginTop: "0.85rem" }}>
+                <label style={styles.label}>Image URL</label>
+                <input
+                  style={styles.input}
+                  value={newTherapist.image}
+                  onChange={(e) => handleTherapistChange("image", e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              <div style={styles.modalActions}>
+                <button style={styles.secondaryBtn} onClick={() => setShowModal(false)}>
+                  Close
+                </button>
+                <button style={styles.addBtn} onClick={addTherapist} disabled={submittingTherapist}>
+                  {submittingTherapist ? "Adding..." : "Add"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
-
-    {/* Add Therapist Modal */}
-    {showModal && (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: '#fff',
-            padding: '2rem',
-            borderRadius: '12px',
-            width: '400px',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-          }}
-        >
-          <h2>Add Therapist</h2>
-          <input
-            placeholder="First Name"
-            value={newTherapist.name}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, name: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <input
-            placeholder="Surname"
-            value={newTherapist.surname}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, surname: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <input
-            placeholder="Email"
-            value={newTherapist.email}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, email: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <input
-            placeholder="Password"
-            type="password"
-            value={newTherapist.password}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, password: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <select
-            value={newTherapist.specialty}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, specialty: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          >
-            {serviceCategories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder="Years of Experience"
-            type="number"
-            value={newTherapist.yearsOfExperience}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, yearsOfExperience: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <input
-            placeholder="License Number"
-            value={newTherapist.licenseNumber}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, licenseNumber: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <input
-            placeholder="Type of Practice"
-            value={newTherapist.typeOfPractice}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, typeOfPractice: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <textarea
-            placeholder="Bio"
-            value={newTherapist.bio}
-            onChange={(e) =>
-              setNewTherapist({ ...newTherapist, bio: e.target.value })
-            }
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{ width: '100%', margin: '0.5rem 0', padding: '0.5rem' }}
-          />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
-            <button style={{ padding: '0.5rem 1rem' }} onClick={() => setShowModal(false)}>
-              Cancel
-            </button>
-            <button
-              style={{ padding: '0.5rem 1rem', backgroundColor: '#002324', color: '#EBFACF' }}
-              onClick={async () => {
-                try {
-                  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/therapists`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newTherapist),
-                  });
-                  if (!res.ok) throw new Error('Failed to add therapist');
-                  const data = await res.json();
-                  const formatted = {
-                    id: data.therapist.id,
-                    name: data.therapist.user?.name?.split(' ')[0] || '',
-                    surname: data.therapist.user?.name?.split(' ')[1] || '',
-                    title: 'Dr.',
-                    specialty: data.therapist.specialization,
-                    typeOfPractice: data.therapist.typeOfPractice,
-                    yearsOfExperience: data.therapist.yearsOfExperience,
-                    hpcsaNumber: data.therapist.licenseNumber,
-                    image: data.therapist.image || `https://i.pravatar.cc/150?img=${Math.floor(Math.random()*70)}`
-                  };
-                  setTherapistsList([...therapistsList, formatted]);
-
-                  setShowModal(false);
-                  setNewTherapist({
-                    name: '',
-                    surname: '',
-                    email: '',
-                    password: '',
-                    specialty: serviceCategories[0],
-                    yearsOfExperience: '',
-                    licenseNumber: '',
-                    typeOfPractice: '',
-                    bio: '',
-                    image: '',
-                  });
-                } catch (err) {
-                  console.error(err);
-                  alert('Failed to add therapist');
-                }
-              }}
-            >
-              Add
-            </button>
-          </div>
-        </div>
+        ) : null}
       </div>
-    )}
-  </>
-);
+    </>
+  );
 }
