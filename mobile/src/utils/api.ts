@@ -1,7 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 import { storage } from './storage';
 
-const WEB_DEFAULT_API_BASE = `${import.meta.env.VITE_API_URL}/api`;
+const WEB_DEFAULT_API_BASE = 'http://localhost:5000/api';
 const NATIVE_DEFAULT_API_BASE = 'http://192.168.0.201:5000/api';
 
 const envApiBase =

@@ -33,8 +33,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "2484349a-11e6-412b-be20-4efb3b08edca"
+        "projectId": "29e423b0-9a13-44e7-9dac-895ca74c483b"
       }
-    }
+    },
+    "owner": "phathisa"
   }
 }
