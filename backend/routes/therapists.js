@@ -1,7 +1,7 @@
-// routes/therapists.js - REVERT TO ORIGINAL WORKING VERSION
+// routes/therapists.js
 const express = require('express');
 const router = express.Router();
-const { TherapistProfile, User, Service } = require("../models");
+const { TherapistProfile, User, Service } = require('../models');
 const bcrypt = require('bcrypt');
 
 const buildTherapistResponse = (profile, user) => ({
@@ -23,22 +23,15 @@ const buildTherapistResponse = (profile, user) => ({
   updatedAt: profile?.updatedAt || user?.updatedAt || null,
 });
 
-// GET all therapists - using manual fetching (NO include)
+// GET all therapists
 router.get('/', async (req, res) => {
   try {
-    console.log('Fetching all therapists...');
-    
-    // Fetch all therapist profiles
     const therapistProfiles = await TherapistProfile.findAll();
-    console.log(`Found ${therapistProfiles.length} therapist profiles`);
-
-    // For each profile, fetch the corresponding user manually
     const therapists = await Promise.all(
       therapistProfiles.map(async (profile) => {
         const user = await User.findByPk(profile.userId, {
-          attributes: ['id', 'name', 'email', 'phone', 'idNumber', 'role']
+          attributes: ['id', 'name', 'email', 'phone', 'idNumber', 'role'],
         });
-
         return {
           id: profile.id,
           specialization: profile.specialization,
@@ -49,19 +42,19 @@ router.get('/', async (req, res) => {
           image: profile.image,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt,
-          user: user ? {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            idNumber: user.idNumber,
-            role: user.role
-          } : null
+          user: user
+            ? {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                idNumber: user.idNumber,
+                role: user.role,
+              }
+            : null,
         };
       })
     );
-
-    console.log('Sending therapists data');
     res.json(therapists);
   } catch (err) {
     console.error('Error in GET /api/therapists:', err);
@@ -73,15 +66,10 @@ router.get('/', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-
     const user = await User.findByPk(userId, {
-      attributes: ['id', 'name', 'email', 'phone', 'idNumber', 'role', 'createdAt', 'updatedAt']
+      attributes: ['id', 'name', 'email', 'phone', 'idNumber', 'role', 'createdAt', 'updatedAt'],
     });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
+    if (!user) return res.status(404).json({ message: 'User not found' });
     const profile = await TherapistProfile.findOne({ where: { userId: user.id } });
     return res.json(buildTherapistResponse(profile, user));
   } catch (err) {
@@ -103,22 +91,14 @@ router.post('/', async (req, res) => {
       licenseNumber,
       typeOfPractice,
       bio,
-      image
+      image,
     } = req.body;
-
-    if (!SERVICE_CATALOG[specialty]) {
-      return res.status(400).json({
-        message: 'Invalid specialty. Please choose one of the predefined service categories.',
-      });
-    }
 
     const idNumber = '8901015009087';
 
     // Check if email exists
     const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
+    if (existingUser) return res.status(400).json({ message: 'Email already exists' });
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -131,7 +111,7 @@ router.post('/', async (req, res) => {
       idNumber,
       role: 'THERAPIST',
       isStaff: true,
-      isActive: true
+      isActive: true,
     });
 
     // Create therapist profile
@@ -142,7 +122,7 @@ router.post('/', async (req, res) => {
       licenseNumber,
       typeOfPractice,
       bio,
-      image: image || null
+      image: image || null,
     });
 
     const fullProfile = {
@@ -160,14 +140,11 @@ router.post('/', async (req, res) => {
         name: user.name,
         email: user.email,
         idNumber: user.idNumber,
-        role: user.role
-      }
+        role: user.role,
+      },
     };
 
-    res.status(201).json({
-      message: 'Therapist created successfully',
-      therapist: fullProfile
-    });
+    res.status(201).json({ message: 'Therapist created successfully', therapist: fullProfile });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create therapist' });
@@ -189,19 +166,16 @@ router.put('/:userId', async (req, res) => {
       licenseNumber,
       typeOfPractice,
       bio,
-      image
+      image,
     } = req.body;
 
     const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (email && email !== user.email) {
       const existingUser = await User.findOne({ where: { email } });
-      if (existingUser && existingUser.id !== user.id) {
+      if (existingUser && existingUser.id !== user.id)
         return res.status(400).json({ message: 'Email already exists' });
-      }
     }
 
     user.name = typeof name === 'string' ? name : user.name;
@@ -216,12 +190,14 @@ router.put('/:userId', async (req, res) => {
         userId: user.id,
         specialization: specialization || '',
         qualification: qualification || '',
-        yearsOfExperience: Number.isFinite(Number(yearsOfExperience)) ? Number(yearsOfExperience) : 0,
+        yearsOfExperience: Number.isFinite(Number(yearsOfExperience))
+          ? Number(yearsOfExperience)
+          : 0,
         licenseNumber: licenseNumber || '',
         typeOfPractice: typeOfPractice || '',
         bio: bio || '',
-        image: image || null
-      }
+        image: image || null,
+      },
     });
 
     if (typeof specialization === 'string') profile.specialization = specialization;
@@ -247,7 +223,10 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const therapist = await TherapistProfile.findByPk(id);
     if (!therapist) return res.status(404).json({ message: 'Therapist not found' });
+
+    // Delete all services associated with therapist
     await Service.destroy({ where: { therapistId: therapist.id } });
+
     await therapist.destroy();
     res.json({ message: 'Therapist removed' });
   } catch (err) {
