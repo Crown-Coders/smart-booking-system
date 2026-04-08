@@ -15,14 +15,14 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mentalcom.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo-mental.com.png",
         "backgroundColor": "#002324"
       },
-      "usesCleartextTraffic": true,
       "package": "com.mentalcom.mobile"
     },
     "web": {
