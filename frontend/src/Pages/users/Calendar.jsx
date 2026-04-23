@@ -30,11 +30,12 @@ function Calendar() {
     description: ""
   });
 
-  /** -------------------- FETCH CURRENT USER -------------------- */
+  /** -------------------- FETCH CURRENT USER ------------------------- */
   useEffect(() => {
     fetchCurrentUser();
   }, []);
 
+  
   useEffect(() => {
     if (rescheduleAppointment?.bookingDate) {
       setSelectedDate(rescheduleAppointment.bookingDate);
